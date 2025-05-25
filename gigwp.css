@@ -1,0 +1,75 @@
+
+        .giglist * {
+            box-sizing: border-box;
+        }
+        
+        .giglist {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            background-color: whitesmoke;
+            gap: 20px;
+            padding: 10px;
+        }
+
+        .giglist>div {
+            background-color: white;
+        }
+
+        .giglist .controls {
+            text-align: right;
+            position: fixed;
+            bottom: 5px;
+            right: 15px;
+            background-color: transparent;
+        }
+
+        .giglist button {
+            padding: 6px;
+            color: white;
+            background-color: dodgerblue;
+            border-radius: 5px;
+            border: 0;
+        }
+
+        .giglist.editing .gig-field {
+            border: 1px solid grey;
+        }
+
+        
+        .giglist.editing #editButton {
+            border: 1px solid red;
+            background-color: yellow;
+            color: black;
+        }
+
+        .giglist:not(.editing) .unlessEditing {
+            display: none;
+        }
+
+        .giglist.editing .prop-show {
+            display: none;
+        }
+
+        .giglist.editing .prop-edit {
+            display: block !important;
+        }
+
+        .prop-edit {
+            font-size: small;
+        }
+
+        .giglist.edit-in-progress #editButton {
+            background-color: red;
+            color: pink;
+        }
+        .gig input {
+            border: 0;
+        }
+        .dtstart, .dtend {
+            width: 8em;
+        }
+        .gig>div {
+            padding: 0 6px;
+        }
