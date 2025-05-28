@@ -1,19 +1,20 @@
-
+        .giglist {
+            background-color: whitesmoke;
+        }
         .giglist * {
             box-sizing: border-box;
         }
         
-        .giglist {
+        .giglist>.gigs{
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             align-items: flex-start;
-            background-color: whitesmoke;
             gap: 20px;
             padding: 10px;
         }
 
-        .giglist>div {
+        .giglist>.gigs>div {
             background-color: white;
         }
 
@@ -23,6 +24,7 @@
             bottom: 5px;
             right: 15px;
             background-color: transparent;
+            z-index: 2000;
         }
 
         .giglist button {
@@ -31,6 +33,12 @@
             background-color: dodgerblue;
             border-radius: 5px;
             border: 0;
+        }
+
+        .giglist button:hover {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            border: 1px solid blue;
+            font-weight: bold;
         }
 
         .giglist.editing .gig-field {
@@ -72,4 +80,7 @@
         }
         .gig>div {
             padding: 0 6px;
+        }
+        .gig-dtinfo {
+            width: 100%;
         }
