@@ -10,7 +10,7 @@
  * Requires Plugins: wp-api
  * Author: Alan Wills
  * Version: 1.1
- * TODO: delete, dup, asif UI; booking link, price, adjustable format
+ * TODO: asif UI; recurrence ; booking link, price, dup
  */
 
 /*
@@ -82,14 +82,17 @@ function gigwp_events_list_shortcode($attributes = [])
     // If this is first time:
     $gigwp_category_id = wp_create_category($category);
 
-    return gigwp_gig_list($_GET['asif'] ?? $asIfDate ?? date('Y-m-d'), $category, $width, $popImages, $layout);
+    return gigwp_gig_list($_GET['asif'] ?? $asIfDate ?? date('Y-m-d'), $category, $width, $popImages, $layout, $_GET['json']??false);
 }
 
 
 
-function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout)
+function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json)
 {
     $gigs = gigwp_get_gigs($fromDate, $category);
+    if ($json) {
+        return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
+    }
 
     return gigwp_gig_show($gigs, $width, $category, $popImages, $layout);
 }

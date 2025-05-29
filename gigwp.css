@@ -130,3 +130,7 @@ img.gigpic {
     margin: 0 4px;
     padding: 4px;
 }
+
+pre {
+    font-size: small;
+}

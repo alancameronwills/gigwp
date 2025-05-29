@@ -141,14 +141,25 @@ function openMediaPopup() {
             });
             imageSet.forEach(img => {
                 let dtstart = dtend = dtinfo = "";
+                let title = "";
                 try {
-                    if (img.caption) {
+                    // You can put dates and info in the caption: YYYY-MM-DD YYYY-MM-DD info
+                    if (img.caption?.trim()) {
+                        title = img.title;
                         [dtstart, dtend, dtinfo] = readDates(img.caption);
+                    } else {
+                        // Or in the filename, optionally with hyphens instead of spaces
+                        const fileNameParts = img.title.match(/^(.*?)[ -]([- 0-9]{10}.*?)$/);
+                        if (fileNameParts) {
+                            title = (fileNameParts[1] || "").replaceAll("-", " ");
+                            [dtstart, dtend, dtinfo] = readDates(fileNameParts[2]);
+                            dtinfo = dtinfo.replaceAll("-", " ");
+                        }
                     }
                 } catch (e) {
                     console.log("Reading dates from caption: ", e);
                 }
-                newPost(img.title, img.id, dtstart, dtend, dtinfo);
+                newPost(title, img.id, dtstart, dtend, dtinfo);
             });
         })
     }
@@ -186,7 +197,7 @@ function readDates(s) {
     const dg = "([0-9]+)[-\/ :.]+";
     const ddgg = `^(?:${dg}${dg}${dg})?(?:${dg}${dg}${dg})?(.*)`;
     const re = new RegExp(ddgg);
-    const c = (s + " ").match(re);
+    const c = (s.replace(/^[\s-]+/, "") + " ").match(re);
     let dg1 = normalDate(c[1], c[2], c[3]);
     let dg2 = normalDate(c[4], c[5], c[6]);
     if (!dg1) dg1 = new Date().toISOString().slice(0, 10);
@@ -238,6 +249,12 @@ function validate(data, savedData) {
         const diff = new Date(savedData?.meta?.dtend || 0) - new Date(savedData?.meta?.dtstart || 0);
         const fixedDtend = new Date(data.meta.dtstart).valueOf() + Math.max(0, diff);
         data.meta.dtend = new Date(fixedDtend).toISOString().substring(0, 10);
+    }
+    if (!data.meta?.recursday) {
+        data.meta.recursweeks = "";
+    }
+    if (!data.meta.recursweeks?.trim()) {
+        data.meta.recursday = 0;
     }
 }
 
@@ -292,7 +309,7 @@ function setEndDateColour(jqGig) {
 }
 
 gigUpdateHandlers.push(jqGig => {
-        // Update end date with start date unless they're different
+    // Update end date with start date unless they're different
     jqGig.on("input", ".gig-dtstart", function (e, a) {
         let gig = e.delegateTarget;
         let saved = JSON.parse(gig.savedData || "");
@@ -316,6 +333,18 @@ gigUpdateHandlers.push(jqGig => {
     jqGig.each((i, g) => setEndDateColour(jQuery(g)));
 })
 
+
+gigUpdateHandlers.push(jqGigs => {
+    jqGigs.on("input", ".gig-recursday", function (e) {
+        const jqGig = jQuery(e.delegateTarget);
+        if (1 * e.target.value) {
+            jqGig.find(".gig-recursweek input[type='checkbox']").each((i, cb) => jQuery(cb).prop("checked", true));
+        } else {
+            jqGig.find(".gig-recursweek input[type='checkbox']").each((i, cb) => jQuery(cb).prop("checked", false));
+        }
+    })
+})
+
 function gigTemplateEditingMap(post, map) {
     let gigdayoptions = ["-", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
         (day, i) =>
@@ -325,9 +354,9 @@ function gigTemplateEditingMap(post, map) {
     let gigweekoptions =
         [1, 2, 3, 4, 5].map((i) => {
             let id = `gig-rw-${post.id}-${i}`;
-            return `<span><input type='checkbox' id='${id}' name='${id}' 
+            return `<span ${i == 5 ? "title='4th or 5th'" : ""}><input type='checkbox' id='${id}' name='${id}' 
             ${(recursweeks.indexOf("" + i) < 0 ? "" : " checked")}/>
-            <label for="${id}">${i == 5 ? "last" : i}</label></span>`;
+            <label for="${id}" >${i == 5 ? "last" : i}</label></span>`;
         }).join("");
 
     map["gigdtstart"] = post.meta.dtstart || "";
