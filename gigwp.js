@@ -21,13 +21,22 @@ function nevernExpandImages() {
         ` style="height:100%;width:100%;object-fit:contain;"  onkeydown="nevernExpandImg('')" src=""/></div>`;
     jQuery(document.body).append(html);
 
-    jQuery(".gig img").click(function () {
-        let img = jQuery(this)[0];
-        nevernExpandImg(img.src);
-    }).css("cursor", "pointer");
     jQuery("body").keydown(event => {
         if (event.keyCode === 27) nevernExpandImg();
     });
+
+    let setXIhandler = (jq) => {
+        jq.click(function () {
+            let img = jQuery(this)[0];
+            nevernExpandImg(img.src);
+        }).css("cursor", "pointer");
+    }
+
+    setXIhandler(jQuery(".gig img"));
+
+    if (window.newGigHandler) {
+        newGigHandler()
+    }
 
 }
 
@@ -50,18 +59,6 @@ function gigHtml(post) {
     let imgLink = post.thumbnail_image || post.pic || (post.link || "").replace(/p=[0-9]+/, "p=" + post.featured_media);
     let gigdates = friendlyDate(post.meta.dtstart) +
         (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend));
-    let gigdayoptions = ["-", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
-        (day, i) =>
-            `<option value=${i} ${i == post.meta.recursday ? " selected" : ""}>${day}</option>`
-    ).join("");
-    let recursweeks = ("" + post.meta.recursweeks) || "";
-    let gigweekoptions =
-        [1, 2, 3, 4, 5].map((i) => {
-            let id = `gig-rw-${post.id}-${i}`;
-            return `<span><input type='checkbox' id='${id}' name='${id}' 
-            ${(recursweeks.indexOf("" + i) < 0 ? "" : " checked")}/>
-            <label for="${id}">${i == 5 ? "last" : i}</label></span>`;
-        }).join("");
 
     let template = jQuery("#gigtemplate").html();
     let maps = {
@@ -69,12 +66,13 @@ function gigHtml(post) {
         "gigtitle": post.title?.rendered || post.title,
         "gigpic": imgLink,
         "gigdates": gigdates,
-        "gigdtstart": post.meta.dtstart || "",
-        "gigdtend": post.meta.dtend || "",
-        "gigdtinfo": post.meta.dtinfo || "",
-        "gigdayoptions": gigdayoptions,
-        "gigweekoptions": gigweekoptions
+        "gigdtinfo": post.meta.dtinfo || ""
     };
+
+    if (window.gigTemplateEditingMap) {
+        gigTemplateEditingMap(post, maps);
+    }
+
     let show = template;
     Object.getOwnPropertyNames(maps).forEach(v => {
         show = show.replaceAll(`%${v}`, maps[v]);

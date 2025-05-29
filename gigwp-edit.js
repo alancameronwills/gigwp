@@ -1,3 +1,5 @@
+var gigUpdateHandlers = [];
+
 
 // ************* Editing gigs ***********
 
@@ -230,6 +232,19 @@ function getGigData(gigElement) {
     };
 };
 
+function validate(data, savedData) {
+    if (data.meta?.dtstart && (data.meta.dtstart?.localeCompare(data.meta?.dtend || "") || 0) > 0) {
+        // dtend < dtstart
+        const diff = new Date(savedData?.meta?.dtend || 0) - new Date(savedData?.meta?.dtstart || 0);
+        const fixedDtend = new Date(data.meta.dtstart).valueOf() + Math.max(0, diff);
+        data.meta.dtend = new Date(fixedDtend).toISOString().substring(0, 10);
+    }
+}
+
+function dateString(d) {
+    date.toISOString().substring(0, 10);
+}
+
 function setHandlers(jqGig) {
     jqGig.on("focusout", function (e, a) {
         // https://learn.wordpress.org/tutorial/interacting-with-the-wordpress-rest-api/
@@ -239,6 +254,7 @@ function setHandlers(jqGig) {
             // hopping to another field in same gig
             const data = getGigData(this);
             if (data && this.savedData != JSON.stringify(data)) {
+                validate(data, this.savedData ? JSON.parse(this.savedData) : "");
                 //console.log("change " + JSON.stringify(data));
                 const post = new wp.api.models.Post(data);
                 threadFlag(1);
@@ -258,5 +274,70 @@ function setHandlers(jqGig) {
         }
         this.savedData = JSON.stringify(getGigData(this));
     });
+
+    // Update end date with start date unless they're different
+    jqGig.on("input", ".gig-dtstart", function (e, a) {
+        let gig = e.delegateTarget;
+        let saved = JSON.parse(gig.savedData || "");
+        let dtend = jQuery(gig).find(".gig-dtend");
+        if (saved && saved.meta.dtend == saved.meta.dtstart ||
+            dtend.val().localeCompare(e.target.value) < 0
+        ) {
+            dtend.val(e.target.value);
+        }
+        setEndDateColour(jQuery(gig));
+    });
+
+
+    jqGig.on("input", ".gig-dtend", function (e, a) {
+        setEndDateColour(jQuery(e.delegateTarget));
+    });
+
+    jqGig.each((i, g) => setEndDateColour(jQuery(g)));
 }
 
+/**
+ * Make the end date look less significant if it's the same as start date
+ * @param {jQuery} jqGig 
+ */
+
+function setEndDateColour(jqGig) {
+    let jqdtstart = jqGig.find("input.gig-dtstart");
+    let jqdtend = jqGig.find("input.gig-dtend");
+    if (jqdtstart.val() == jqdtend.val()) jqdtend.addClass("sameAsStart");
+    else jqdtend.removeClass("sameAsStart");
+}
+
+
+function gigTemplateEditingMap(post, map) {
+    let gigdayoptions = ["-", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+        (day, i) =>
+            `<option value=${i} ${i == post.meta.recursday ? " selected" : ""}>${day}</option>`
+    ).join("");
+    let recursweeks = ("" + post.meta.recursweeks) || "";
+    let gigweekoptions =
+        [1, 2, 3, 4, 5].map((i) => {
+            let id = `gig-rw-${post.id}-${i}`;
+            return `<span><input type='checkbox' id='${id}' name='${id}' 
+            ${(recursweeks.indexOf("" + i) < 0 ? "" : " checked")}/>
+            <label for="${id}">${i == 5 ? "last" : i}</label></span>`;
+        }).join("");
+
+    map["gigdtstart"] = post.meta.dtstart || "";
+    map["gigdtend"] = post.meta.dtend || "";
+    map["gigdayoptions"] = gigdayoptions;
+    map["gigweekoptions"] = gigweekoptions;
+}
+
+function deleteGig(id) {
+    let gig = jQuery(`.gig[data-id="${id}"]`);
+    let title = gig.find(".gig-title").text();
+    if (confirm(`Delete event "${title}" ?`)) {
+        const post = new wp.api.models.Post({ id: id });
+        threadFlag(1);
+        post.destroy().done(function (post) {
+            jQuery(`.gig[data-id="${id}"]`).remove();
+            threadFlag(-1);
+        })
+    }
+}

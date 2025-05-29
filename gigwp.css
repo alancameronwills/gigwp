@@ -1,86 +1,130 @@
-        .giglist {
-            background-color: whitesmoke;
-        }
-        .giglist * {
-            box-sizing: border-box;
-        }
-        
-        .giglist>.gigs{
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 20px;
-            padding: 10px;
-        }
+.giglist {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    font-size: 1rem;
+    line-height: 1.49;
+}
 
-        .giglist>.gigs>div {
-            background-color: white;
-        }
 
-        .giglist .controls {
-            text-align: right;
-            position: fixed;
-            bottom: 5px;
-            right: 15px;
-            background-color: transparent;
-            z-index: 2000;
-        }
+.giglist {
+    background-color: whitesmoke;
+}
 
-        .giglist button {
-            padding: 6px;
-            color: white;
-            background-color: dodgerblue;
-            border-radius: 5px;
-            border: 0;
-        }
+.giglist * {
+    box-sizing: border-box;
+}
 
-        .giglist button:hover {
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-            border: 1px solid blue;
-            font-weight: bold;
-        }
+.giglist>.gigs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 10px;
+}
 
-        .giglist.editing .gig-field {
-            border: 1px solid grey;
-        }
+.giglist .controls {
+    text-align: right;
+    position: fixed;
+    bottom: 5px;
+    right: 15px;
+    background-color: transparent;
+    z-index: 2000;
+}
 
-        
-        .giglist.editing #editButton {
-            border: 1px solid red;
-            background-color: yellow;
-            color: black;
-        }
+.giglist button {
+    padding: 6px;
+    color: white;
+    background-color: dodgerblue;
+    border-radius: 5px;
+    border: 0;
+}
 
-        .giglist:not(.editing) .unlessEditing {
-            display: none;
-        }
+.giglist button:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    border: 1px solid blue;
+    font-weight: bold;
+}
 
-        .giglist.editing .prop-show {
-            display: none;
-        }
+.giglist.editing .gig-field {
+    border: 1px solid grey;
+}
 
-        .giglist.editing .prop-edit {
-            display: block !important;
-        }
 
-        .prop-edit {
-            font-size: small;
-        }
+.giglist.editing #editButton {
+    border: 1px solid red;
+    background-color: yellow;
+    color: black;
+}
 
-        .giglist.edit-in-progress #editButton {
-            background-color: red;
-            color: pink;
-        }
-        .gig input {
-            border: 0;
-        }
-        .dtstart, .dtend {
-            width: 8em;
-        }
-        .gig>div {
-            padding: 0 6px;
-        }
-        .gig-dtinfo {
-            width: 100%;
-        }
+.giglist:not(.editing) .unlessEditing {
+    display: none;
+}
+
+.giglist.editing .prop-show {
+    display: none;
+}
+
+.giglist.editing .prop-edit {
+    display: block !important;
+}
+
+.prop-edit {
+    font-size: small;
+}
+
+.giglist.edit-in-progress #editButton {
+    background-color: red;
+    color: pink;
+}
+
+.gig {
+    background-color: white;
+    overflow: hidden;
+    position:relative;
+}
+
+.gig input {
+    border: 0;
+}
+
+.dtstart,
+.dtend {
+    width: 8em;
+}
+
+.gig>div {
+    padding: 0 6px;
+}
+
+.gig-dtinfo {
+    width: 100%;
+}
+
+input.sameAsStart {
+    opacity: 0.5;
+}
+
+span.show-info {
+    text-wrap-mode: nowrap;
+}
+
+img.gigpic {
+    border-top: 1px solid lightgray;
+    border-bottom: 1px solid lightgray;
+}
+
+.gig-controls {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+.delete-button {
+    inset: 1px solid red;
+}
+.giglist:not(.editing) .gigcontrols {
+    display: none;
+}

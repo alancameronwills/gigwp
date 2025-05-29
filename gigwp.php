@@ -85,6 +85,7 @@ function gigwp_events_list_shortcode($attributes = [])
 }
 
 
+
 function gigwp_gig_list($fromDate, $category, $width, $popImages)
 {
     $gigs = gigwp_get_gigs($fromDate, $category);
@@ -92,7 +93,12 @@ function gigwp_gig_list($fromDate, $category, $width, $popImages)
     return gigwp_gig_show($gigs, $width, $category, $popImages);
 }
 
-
+/**
+ * Return a sorted list of Posts representing Gigs
+ * @param (Date) $fromDate Earliest event start date to retrieve
+ * @param (string) $category $Category of Post used for gigs
+ * 
+ */
 
 function gigwp_get_gigs($fromDate, $category)
 {
@@ -152,6 +158,11 @@ function gigwp_fdate($dt)
     return date_format(date_create($dt), "D jS M Y");
 }
 
+/**
+ * The HTML template for a single poster. 
+ * @param (bool) $isSignedIn - whether the current user can edit the list
+ * 
+ */
 function gigwp_template($isSignedIn)
 {
     $t = <<<END
@@ -165,26 +176,31 @@ function gigwp_template($isSignedIn)
             %{
             <div class="prop-edit" style="display:none">
                 <div>
-                    <input class="gig-dtstart gig-field" type="date" value="%gigdtstart" />
-                    <span> -
-                        <input class="gig-dtend gig-field" type="date" value="%gigdtend" />
+                    <input class="gig-dtstart gig-field" type="date" value="%gigdtstart"
+                        title="Start date" />
+                    <span> <span class="datedash">&emdash;</span>
+                        <input class="gig-dtend gig-field" type="date" value="%gigdtend"
+                            title="End date" />
                     </span>
                 </div>
                 <div>
                     <input class="gig-dtinfo gig-field" type="text"  placeholder="extra info" value="%gigdtinfo" />
                 </div>
                 <fieldset>
-                        <legend>Recurrence</legend>
-                        Recurs day:
+                        <legend>Automatic recurrence</legend>
+                        Recurs on day of week:
                         <select class="gig-recursday">
                              %gigdayoptions
                         </select>
                         <br />
                         <fieldset class="gig-recursweek">
-                            <legend>Recurs weeks of month</legend>
+                            <legend>Recurs in weeks of month:</legend>
                             %gigweekoptions
                         </fieldset>
                 </fieldset>
+            </div>
+            <div class="gig-controls">
+                <button class="delete-button" onclick="deleteGig('%gigid')">Delete</button>
             </div>
             %}
         </div>
@@ -200,11 +216,22 @@ function gigwp_template($isSignedIn)
     return $t;
 }
 
-
+/**
+ * Return the HTML for displaying the list of gigs.
+ * 
+ * @param (Array(Post)) $gigs Posts in the Gig category retrieved from WP DB
+ * @param (int) $width Width of each gig poster on the displayed list
+ * @param (string) $category The category to which gigs belong
+ * @param (bool) $popImages If true, expand images on user click
+ * 
+ */
 function gigwp_gig_show($gigs, $width, $category, $popImages)
 {
     global $gigwp_category_id;
     ob_start();
+    // The JSON list of gigs is uploaded inline
+    // The HTML template for each gig is also inline
+    // On page load, JS elaborates the HTML
 ?>
     <script id="gig-json" type="application/json">
         <?= json_encode($gigs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK); ?>
@@ -231,7 +258,9 @@ function gigwp_gig_show($gigs, $width, $category, $popImages)
                 <button id="addButton" onclick='addGig()'>Add</button>
                 <button id="editButton" onclick='editGig()'>Edit</button>
             </div>
-        <?php } ?>
+        <?php } 
+        // On page load, list is inserted here.
+        ?>
         <div class='gigs'>
 
         </div>
