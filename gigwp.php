@@ -70,9 +70,10 @@ function gigwp_events_list_shortcode($attributes = [])
     global $gigwp_category_id;
     extract(shortcode_atts(
         [
+            'layout' => "title image dates", // order of appearance in each gig
+            'width' => 340,  // px width of images
             'asIfDate' => null, // Display from this date - can also use ?asif=YYYY-MM-DD
             'category' => GIGWP_CATEGORY,
-            'width' => 340,  // px width of images
             'popImages' => true // expand image on user click
         ],
         $attributes
@@ -81,16 +82,16 @@ function gigwp_events_list_shortcode($attributes = [])
     // If this is first time:
     $gigwp_category_id = wp_create_category($category);
 
-    return gigwp_gig_list($_GET['asif'] ?? $asIfDate ?? date('Y-m-d'), $category, $width, $popImages);
+    return gigwp_gig_list($_GET['asif'] ?? $asIfDate ?? date('Y-m-d'), $category, $width, $popImages, $layout);
 }
 
 
 
-function gigwp_gig_list($fromDate, $category, $width, $popImages)
+function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout)
 {
     $gigs = gigwp_get_gigs($fromDate, $category);
 
-    return gigwp_gig_show($gigs, $width, $category, $popImages);
+    return gigwp_gig_show($gigs, $width, $category, $popImages, $layout);
 }
 
 /**
@@ -161,59 +162,76 @@ function gigwp_fdate($dt)
 /**
  * The HTML template for a single poster. 
  * @param (bool) $isSignedIn - whether the current user can edit the list
+ * @param(string) $layout Order of presentation of "title image dates" per gig
  * 
  */
-function gigwp_template($isSignedIn)
+function gigwp_gig_template($isSignedIn, $layout = "title image dates")
 {
-    $t = <<<END
-        <div class="gig" data-id="%gigid">
-            <div class="gig-title gig-field">%gigtitle</div>
-            <img src="%gigpic" class="gigpic" />
-            <div class="prop-show">
-                <span class="show-dates">%gigdates</span>
-                <span class="show-info">%gigdtinfo</span>
-            </div>
-            %{
+    ob_start();
+?>
+    <div class="gig" data-id="%gigid">
+        <?php
+        $parts = explode(" ", $layout);
+        foreach ($parts as $part) {
+            switch (substr($part, 0, 1)) {
+                case "t":
+        ?>
+                    <div class="gig-title gig-field">%gigtitle</div>
+                <?php
+                    break;
+                case "i":
+                ?>
+                    <img src="%gigpic" class="gigpic" />
+
+                <?php
+                    break;
+                case "d":
+                ?>
+                    <div class="prop-show">
+                        <span class="show-dates">%gigdates</span>
+                        <span class="show-info">%gigdtinfo</span>
+                    </div>
+        <?php
+                    break;
+            }
+        }
+        if ($isSignedIn) {
+        ?>
             <div class="prop-edit" style="display:none">
                 <div>
                     <input class="gig-dtstart gig-field" type="date" value="%gigdtstart"
                         title="Start date" />
-                    <span> <span class="datedash">&emdash;</span>
+                    <span> <span class="datedash">&mdash;</span>
                         <input class="gig-dtend gig-field" type="date" value="%gigdtend"
                             title="End date" />
                     </span>
                 </div>
                 <div>
-                    <input class="gig-dtinfo gig-field" type="text"  placeholder="extra info" value="%gigdtinfo" />
+                    <input class="gig-dtinfo gig-field" type="text" placeholder="extra info" value="%gigdtinfo" />
                 </div>
                 <fieldset>
-                        <legend>Automatic recurrence</legend>
-                        Recurs on day of week:
-                        <select class="gig-recursday">
-                             %gigdayoptions
-                        </select>
-                        <br />
-                        <fieldset class="gig-recursweek">
-                            <legend>Recurs in weeks of month:</legend>
-                            %gigweekoptions
-                        </fieldset>
+                    <legend>Automatic recurrence</legend>
+                    Recurs on day of week:
+                    <select class="gig-recursday">
+                        %gigdayoptions
+                    </select>
+                    <br />
+                    <fieldset class="gig-recursweek">
+                        <legend>Recurs in weeks of month:</legend>
+                        %gigweekoptions
+                    </fieldset>
                 </fieldset>
             </div>
-            <div class="gig-controls">
+            <div class="gig-controls unlessEditing">
                 <button class="delete-button" onclick="deleteGig('%gigid')">Delete</button>
             </div>
-            %}
-        </div>
-    END;
 
-    if (!$isSignedIn) {
-        $t = preg_replace("/%{.*%}/s", "", $t);
-    } else {
-        $t = preg_replace("/%[{}]/s", "", $t);
-    }
-
-
-    return $t;
+        <?php
+        }
+        ?>
+    </div>
+<?php
+    return ob_get_clean();
 }
 
 /**
@@ -223,9 +241,10 @@ function gigwp_template($isSignedIn)
  * @param (int) $width Width of each gig poster on the displayed list
  * @param (string) $category The category to which gigs belong
  * @param (bool) $popImages If true, expand images on user click
+ * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigwp_gig_show($gigs, $width, $category, $popImages)
+function gigwp_gig_show($gigs, $width, $category, $popImages, $layout)
 {
     global $gigwp_category_id;
     ob_start();
@@ -237,7 +256,7 @@ function gigwp_gig_show($gigs, $width, $category, $popImages)
         <?= json_encode($gigs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK); ?>
     </script>
     <script id="gigtemplate" type="text/html">
-        <?= gigwp_template(current_user_can('edit_others_pages')) ?>
+        <?= gigwp_gig_template(current_user_can('edit_others_pages'), $layout) ?>
     </script>
     <style>
         .gig>div {
@@ -258,7 +277,7 @@ function gigwp_gig_show($gigs, $width, $category, $popImages)
                 <button id="addButton" onclick='addGig()'>Add</button>
                 <button id="editButton" onclick='editGig()'>Edit</button>
             </div>
-        <?php } 
+        <?php }
         // On page load, list is inserted here.
         ?>
         <div class='gigs'>

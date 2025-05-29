@@ -275,7 +275,24 @@ function setHandlers(jqGig) {
         this.savedData = JSON.stringify(getGigData(this));
     });
 
-    // Update end date with start date unless they're different
+
+    gigUpdateHandlers.forEach(f => f(jqGig));
+}
+
+/**
+ * Make the end date look less significant if it's the same as start date
+ * @param {jQuery} jqGig 
+ */
+
+function setEndDateColour(jqGig) {
+    let jqdtstart = jqGig.find("input.gig-dtstart");
+    let jqdtend = jqGig.find("input.gig-dtend");
+    if (jqdtstart.val() == jqdtend.val()) jqdtend.addClass("sameAsStart");
+    else jqdtend.removeClass("sameAsStart");
+}
+
+gigUpdateHandlers.push(jqGig => {
+        // Update end date with start date unless they're different
     jqGig.on("input", ".gig-dtstart", function (e, a) {
         let gig = e.delegateTarget;
         let saved = JSON.parse(gig.savedData || "");
@@ -293,21 +310,11 @@ function setHandlers(jqGig) {
         setEndDateColour(jQuery(e.delegateTarget));
     });
 
+})
+
+gigUpdateHandlers.push(jqGig => {
     jqGig.each((i, g) => setEndDateColour(jQuery(g)));
-}
-
-/**
- * Make the end date look less significant if it's the same as start date
- * @param {jQuery} jqGig 
- */
-
-function setEndDateColour(jqGig) {
-    let jqdtstart = jqGig.find("input.gig-dtstart");
-    let jqdtend = jqGig.find("input.gig-dtend");
-    if (jqdtstart.val() == jqdtend.val()) jqdtend.addClass("sameAsStart");
-    else jqdtend.removeClass("sameAsStart");
-}
-
+})
 
 function gigTemplateEditingMap(post, map) {
     let gigdayoptions = ["-", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(

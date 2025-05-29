@@ -13,6 +13,13 @@ function nevernExpandImg(src) {
     }
 }
 
+function setXIhandler(jq) {
+    jq.click(function () {
+        let img = jQuery(this)[0];
+        nevernExpandImg(img.src);
+    }).css("cursor", "pointer");
+}
+
 function nevernExpandImages() {
     let html = `<div ` +
         `style="position:fixed;top:0;left:0;height:100%;width:100%;background-color:black;z-index:99999;cursor:pointer;display:none;" ` +
@@ -25,17 +32,12 @@ function nevernExpandImages() {
         if (event.keyCode === 27) nevernExpandImg();
     });
 
-    let setXIhandler = (jq) => {
-        jq.click(function () {
-            let img = jQuery(this)[0];
-            nevernExpandImg(img.src);
-        }).css("cursor", "pointer");
-    }
-
     setXIhandler(jQuery(".gig img"));
 
-    if (window.newGigHandler) {
-        newGigHandler()
+    if (window.gigUpdateHandlers) {
+        gigUpdateHandlers.push(jqgig => {
+            setXIhandler(jqgig.find("img"));
+        });
     }
 
 }

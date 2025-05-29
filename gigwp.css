@@ -117,7 +117,7 @@ img.gigpic {
 
 .gig-controls {
     position: absolute;
-    top: 0;
+    top: 20px;
     right: 0;
     display: flex;
     justify-content: flex-end;
@@ -125,6 +125,8 @@ img.gigpic {
 .delete-button {
     inset: 1px solid red;
 }
-.giglist:not(.editing) .gigcontrols {
-    display: none;
+
+.prop-edit>* {
+    margin: 0 4px;
+    padding: 4px;
 }
