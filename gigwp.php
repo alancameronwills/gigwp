@@ -82,14 +82,29 @@ function gigwp_events_list_shortcode($attributes = [])
     // If this is first time:
     $gigwp_category_id = wp_create_category($category);
 
-    return gigwp_gig_list($_GET['asif'] ?? $asIfDate ?? date('Y-m-d'), $category, $width, $popImages, $layout, $_GET['json']??false);
+    $fromDate = $_GET['asif'] ?? $asIfDate ?? date('Y-m-d');
+
+
+    if (!preg_match("/^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/", $fromDate)) {
+        $fromDate = date('Y-m-d');
+    }
+
+
+    return gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $_GET['json'] ?? false);
 }
 
 
 
 function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json)
 {
-    $gigs = gigwp_get_gigs($fromDate, $category);
+    $postDated = gigwp_get_gigs_with_recurs($fromDate, $category);
+    if ($json == 2) {
+        return "<pre id='gigiau'>\n" . json_encode($postDated, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
+    }
+    $postIds = array_map(function ($item) {
+        return $item->ID;
+    }, $postDated);
+    $gigs = gigwp_get_gigs($fromDate, $category, $postIds);
     if ($json) {
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
@@ -97,19 +112,55 @@ function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json
     return gigwp_gig_show($gigs, $width, $category, $popImages, $layout);
 }
 
+function gigwp_get_gigs_with_recurs($fromDate, $category)
+{
+    global $wpdb;
+    // dtend > now || recursday > 0 && dtend = dtstart
+    $query = " 
+        SELECT ID, post_title , 
+            pm.meta_value AS 'dtend' , 
+            pm2.meta_value AS 'dtstart',
+            pm3.meta_value AS 'recursday'
+        FROM $wpdb->posts p
+            INNER JOIN $wpdb->postmeta pm ON pm.post_id = p.ID
+            INNER JOIN $wpdb->postmeta pm2 ON pm2.post_id = p.ID
+            INNER JOIN $wpdb->postmeta pm3 ON pm3.post_id = p.ID
+        WHERE p.post_status = 'publish'
+        AND p.post_type = 'post'
+        AND pm.meta_key = 'dtend'
+        AND pm2.meta_key = 'dtstart'
+        AND pm3.meta_key = 'recursday'
+        AND (
+            pm.meta_value > '$fromDate'
+            OR (
+                pm3.meta_value > 0
+                AND pm.meta_value = pm2.meta_value
+            )
+        )
+        ";
+
+    return $wpdb->get_results($query);
+}
+
 /**
  * Return a sorted list of Posts representing Gigs
  * @param (Date) $fromDate Earliest event start date to retrieve
- * @param (string) $category $Category of Post used for gigs
+ * @param (string) $category of Post used for gigs
  * 
  */
-
-function gigwp_get_gigs($fromDate, $category)
+function gigwp_get_gigs($fromDate, $category, $postIds = [])
 {
     // https://developer.wordpress.org/reference/classes/WP_Query/parse_query/
-    $query = [
+
+    $qExpr = [
         'category_name' => $category,
-        'meta_query' => [
+        'suppress_filters' => true,
+        'nopaging' => true
+    ];
+    if (count($postIds) > 0) {
+        $qExpr['post__in'] = $postIds;
+    } else {
+        $qExpr['meta_query'] = [
             'relation' => 'OR',
             [
                 'key' => 'dtend',
@@ -126,12 +177,12 @@ function gigwp_get_gigs($fromDate, $category)
                 'compare' => '>=',
                 'type' => 'DATE',
             ]
-        ]
-    ];
+        ];
+    }
 
 
     $gigs = [];
-    $query = new WP_QUERY($query);
+    $query = new WP_QUERY($qExpr);
     while ($query->have_Posts()):
         $query->the_post();
         $id = get_the_id();
@@ -149,13 +200,97 @@ function gigwp_get_gigs($fromDate, $category)
         $gigs[] = $item;
     endwhile;
     wp_reset_postdata();
-    //echo json_encode($gigs);
-    usort($gigs, function ($a, $b) {
 
-        return strcmp($a['meta']['dtstart'][0] ?? "", $b['meta']['dtstart'][0] ?? "");
+    // Reset start dates of recurrent gigs:
+    for ($i = 0; $i < count($gigs); $i++) { // foreach creates a copy
+        // if start date is past, and there is a recurrence
+        $gm = &$gigs[$i]['meta']; // Must be reference, else we are writing to a copy
+        if (strcmp($gm['dtstart'], $fromDate) < 0 && $gm['recursday']) {
+            // Recurrence - set the start date
+            $nextDate = nthDayOfMonth($gm['recursday'], $gm['recursweeks'], new DateTime($fromDate));
+            $nextDateString = date_format($nextDate, 'Y-m-d');
+            $gm['dtsince'] = $gm['dtstart']; // keep old start date
+            if ($gm['dtstart']==$gm['dtend']) {
+                // Preserve "recurs forever" flag i.e. dtstart==dtend
+                $gm['dtend'] = $nextDateString;
+            }
+            $gm['dtstart'] = $nextDateString;
+        }
+        // Note that if user edits gig, they will permanently reset the start date
+    }
+    usort($gigs, function ($a, $b) {
+        return strcmp($a['meta']['dtstart'] ?? "", $b['meta']['dtstart'] ?? "");
     });
     return $gigs;
 }
+
+function dmsg($s)
+{
+    echo "<div style='z-index:5000; background-color:white;position:fixed;top:40px;left:0;'>$s</div>";
+}
+
+
+
+function nthDayOfMonth($dayOfWeek, $weeksInMonth, $today)
+{
+    if (!$today) {
+        $today = new DateTime('NOW');
+    }
+    $result = NULL;
+    $current_month = $today->format("n") + 0;
+    $current_date = $today->format("d") + 0;
+
+    // First day of current month
+    $diff = $current_date - 1;
+    $dt = clone $today;
+    $dt->sub(new DateInterval("P{$diff}D"));
+    //echo "First of current month: {$dt->format("l Y M d")}\n";
+
+    // First required day of current month
+    $focm = $dt->format("N") + 0;
+    //echo "First day of current month is $focm\n";
+    $freqocm = ($dayOfWeek - $focm + 7) % 7;
+    //echo "First required day of current month is {$freqocm}\n";
+    $dt->add(new DateInterval("P{$freqocm}D"));
+
+    $monthCount = 0;
+    $weekCount = 0;
+    $currentMonth = 0;
+    $checkWeek = 0;
+    $result = NULL;
+    for ($i = 0; $i < 10; $i++) {
+        $weekCount++;
+        $newMonth = $dt->format("n") + 0;
+        if ($currentMonth != $newMonth) {
+            $monthCount++;
+            $currentMonth = $newMonth;
+            $weekCount = 1;
+            $checkWeek = 0;
+        }
+        $later = $dt >= $today;
+        $found = substr($weeksInMonth, $checkWeek, 1) == $weekCount;
+        if (!$found && substr($weeksInMonth, $checkWeek, 1) == 5 && $weekCount == 4) {
+            $nextWeek = clone $dt;
+            $nextWeek->add(new DateInterval("P7D"));
+            $nextWeekMonth = $nextWeek->format("n") + 0;
+            $found = $nextWeekMonth != $currentMonth;
+        }
+
+        //echo "$weekCount = {$dt->format("l Y M d")} $later  $found\n";
+        if ($result == NULL && $later && $found) {
+            $result = clone $dt;
+            //return $result;
+        }
+
+        if (
+            substr($weeksInMonth, $checkWeek, 1) <= $weekCount
+            && $checkWeek < strlen($weeksInMonth) - 1
+        ) $checkWeek++;
+        $dt->add(new DateInterval("P7D"));
+    }
+    return $result;
+}
+
 
 function gigwp_fdate($dt)
 {
@@ -194,17 +329,17 @@ function gigwp_gig_template($isSignedIn, $layout = "title image dates")
                         <span class="show-dates">%gigdates</span>
                         <span class="show-info">%gigdtinfo</span>
                     </div>
-        <?php
+            <?php
                     break;
             }
         }
         if ($isSignedIn) {
-        ?>
+            ?>
             <div class="prop-edit" style="display:none">
                 <div>
                     <input class="gig-dtstart gig-field" type="date" value="%gigdtstart"
                         title="Start date" />
-                    <span> <span class="datedash">&mdash;</span>
+                    <span class="gig-dtend-group"> <span class="datedash">&mdash;</span>
                         <input class="gig-dtend gig-field" type="date" value="%gigdtend"
                             title="End date" />
                     </span>

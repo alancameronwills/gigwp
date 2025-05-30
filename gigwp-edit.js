@@ -302,10 +302,21 @@ function setHandlers(jqGig) {
  */
 
 function setEndDateColour(jqGig) {
-    let jqdtstart = jqGig.find("input.gig-dtstart");
-    let jqdtend = jqGig.find("input.gig-dtend");
-    if (jqdtstart.val() == jqdtend.val()) jqdtend.addClass("sameAsStart");
-    else jqdtend.removeClass("sameAsStart");
+    jqGig.each((i, g) => {
+        const jqg = jQuery(g);
+        let dtstart = jqg.find("input.gig-dtstart").val();
+        let dtend = jqg.find("input.gig-dtend").val();
+        let jqrecursday = jqg.find(".gig-recursday");
+        let recursdayValue = 1*jqrecursday.val()||0;
+        jqg.toggleClass("onedate", dtstart == dtend);
+        jqg.toggleClass("recurs", !!recursdayValue);
+        let rweekscount = jqg.find(".gig-recursweek input:checked").length;
+
+        if (recursdayValue == 0 && rweekscount>0 ) {
+            jqrecursday.val(new Date(dtstart).getDay());
+        }
+        
+    })
 }
 
 gigUpdateHandlers.push(jqGig => {
@@ -342,6 +353,10 @@ gigUpdateHandlers.push(jqGigs => {
         } else {
             jqGig.find(".gig-recursweek input[type='checkbox']").each((i, cb) => jQuery(cb).prop("checked", false));
         }
+        setEndDateColour(jQuery(e.delegateTarget));
+    })
+    jqGigs.on("input", "input[type=checkbox]", function (e) {
+        setEndDateColour(jQuery(e.delegateTarget));
     })
 })
 

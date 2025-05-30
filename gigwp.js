@@ -60,8 +60,20 @@ function gigHtml(post) {
 
     let imgLink = post.thumbnail_image || post.pic || (post.link || "").replace(/p=[0-9]+/, "p=" + post.featured_media);
     let gigdates = friendlyDate(post.meta.dtstart) +
-        (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend));
-
+        (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
+    if (post.meta.recursday && post.meta.recursweeks) {
+        const weeks = "" + post.meta.recursweeks; // cast from number
+        let nth = [];
+        if (weeks != "12345") {
+            const cardinals = ['1st', '2nd', '3rd', '4th', 'last'];
+            for (let i = 0; i < weeks.length; i++) {
+                nth.push(cardinals[1 * weeks.charAt(i) - 1]);
+            }
+        }
+        const nthString = nth.join(", ");
+        const nthAndString = nthString.replace(/, ([^,]*)$/, " &amp; $1");
+        gigdates += ` <span class='recurrence'>every ${nthAndString} week</span>`;
+    }
     let template = jQuery("#gigtemplate").html();
     let maps = {
         "gigid": post.id,
@@ -82,8 +94,13 @@ function gigHtml(post) {
     return show;
 }
 
-function friendlyDate(d = "") {
+function friendlyDate(d = "", day = true) {
     if (!d) return "";
-    return new Date(d).toLocaleDateString();
+    let options = {};
+    if (day) {
+        options['weekday'] = 'short';
+    }
+    Object.assign(options, { 'day': 'numeric', 'month': 'short', 'year': 'numeric' });
+    return new Date(d).toLocaleDateString(undefined, options);
 }
 

@@ -94,6 +94,8 @@
     width: 8em;
 }
 
+
+
 .gig>div {
     padding: 0 6px;
 }
@@ -102,11 +104,25 @@
     width: 100%;
 }
 
-input.sameAsStart {
+.onedate .gig-dtend-group {
     opacity: 0.5;
 }
 
+.onedate.recurs .gig-dtend-group::after {
+    content:"forever";
+    font-size: small
+}
+
+.invalid-field {
+    outline: 1px solid red;
+}
+
 span.show-info {
+    text-wrap-mode: nowrap;
+}
+
+span.recurrence {
+    font-size:small;
     text-wrap-mode: nowrap;
 }
 
