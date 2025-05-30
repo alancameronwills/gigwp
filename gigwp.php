@@ -10,7 +10,7 @@
  * Requires Plugins: wp-api
  * Author: Alan Wills
  * Version: 1.1
- * TODO: asif UI; recurrence ; booking link, price, dup
+ * TODO: asif UI; venue, booking link, price;
  */
 
 /*
@@ -74,7 +74,8 @@ function gigwp_events_list_shortcode($attributes = [])
             'width' => 340,  // px width of images
             'asIfDate' => null, // Display from this date - can also use ?asif=YYYY-MM-DD
             'category' => GIGWP_CATEGORY,
-            'popImages' => true // expand image on user click
+            'popImages' => true, // expand image on user click
+            'venue' => "Newport Memorial Hall"
         ],
         $attributes
     ));
@@ -90,12 +91,12 @@ function gigwp_events_list_shortcode($attributes = [])
     }
 
 
-    return gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $_GET['json'] ?? false);
+    return gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $_GET['json'] ?? false, $venue);
 }
 
 
 
-function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json)
+function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json, $defaultVenue)
 {
     $postDated = gigwp_get_gigs_with_recurs($fromDate, $category);
     if ($json == 2) {
@@ -109,7 +110,7 @@ function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
-    return gigwp_gig_show($gigs, $width, $category, $popImages, $layout);
+    return gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue);
 }
 
 function gigwp_get_gigs_with_recurs($fromDate, $category)
@@ -210,7 +211,7 @@ function gigwp_get_gigs($fromDate, $category, $postIds = [])
             $nextDate = nthDayOfMonth($gm['recursday'], $gm['recursweeks'], new DateTime($fromDate));
             $nextDateString = date_format($nextDate, 'Y-m-d');
             $gm['dtsince'] = $gm['dtstart']; // keep old start date
-            if ($gm['dtstart']==$gm['dtend']) {
+            if ($gm['dtstart'] == $gm['dtend']) {
                 // Preserve "recurs forever" flag i.e. dtstart==dtend
                 $gm['dtend'] = $nextDateString;
             }
@@ -303,7 +304,7 @@ function gigwp_fdate($dt)
  * @param(string) $layout Order of presentation of "title image dates" per gig
  * 
  */
-function gigwp_gig_template($isSignedIn, $layout = "title image dates")
+function gigwp_gig_template($isSignedIn, $layout = "title image dates", $defaultVenue = "")
 {
     ob_start();
 ?>
@@ -314,7 +315,11 @@ function gigwp_gig_template($isSignedIn, $layout = "title image dates")
             switch (substr($part, 0, 1)) {
                 case "t":
         ?>
-                    <div class="gig-title gig-field">%gigtitle</div>
+                    <div>
+                        %bookbutton
+                        <div class="gig-title gig-field">%gigtitle
+                        </div>
+                    </div>
                 <?php
                     break;
                 case "i":
@@ -328,6 +333,13 @@ function gigwp_gig_template($isSignedIn, $layout = "title image dates")
                     <div class="prop-show">
                         <span class="show-dates">%gigdates</span>
                         <span class="show-info">%gigdtinfo</span>
+                    </div>
+                <?php
+                    break;
+                case "v":
+                ?>
+                    <div class="venue">
+                        %venue
                     </div>
             <?php
                     break;
@@ -359,6 +371,29 @@ function gigwp_gig_template($isSignedIn, $layout = "title image dates")
                         %gigweekoptions
                     </fieldset>
                 </fieldset>
+                <fieldset class="venuebooking">
+                    <legend>Venue and booking or more info link</legend>
+                    <div>
+                        <label>Venue (optional):
+                            <input class="gig-venue" name="gig-venue" class="gig-field" placeholder="<?= $defaultVenue ?>" value="%venue" />
+                        </label>
+                    </div>
+                    <div>
+                        <label>Button label:
+                            <input class="gig-booklabel" placeholder="Book" class="gig-field" value="%booklabel" />
+                        </label>
+                    </div>
+                    <div>
+                        <label class="gig-bookinglink-group">Button link:
+                            <input class="gig-bookinglink" type="url" class="gig-field" placeholder="https://..." value="%bookinglink" />
+                        </label>
+                    </div>
+                    <div>
+                        <label>Or link to poster page on this site:
+                            <input type="checkbox" class="gig-local-link" %locallink />
+                        </label>
+                    </div>
+                </fieldset>
             </div>
             <div class="gig-controls unlessEditing">
                 <button class="delete-button" onclick="deleteGig('%gigid')">Delete</button>
@@ -382,7 +417,7 @@ function gigwp_gig_template($isSignedIn, $layout = "title image dates")
  * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigwp_gig_show($gigs, $width, $category, $popImages, $layout)
+function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue)
 {
     global $gigwp_category_id;
     ob_start();
@@ -394,7 +429,7 @@ function gigwp_gig_show($gigs, $width, $category, $popImages, $layout)
         <?= json_encode($gigs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK); ?>
     </script>
     <script id="gigtemplate" type="text/html">
-        <?= gigwp_gig_template(current_user_can('edit_others_pages'), $layout) ?>
+        <?= gigwp_gig_template(current_user_can('edit_others_pages'), $layout, $defaultVenue) ?>
     </script>
     <style>
         .gig>div {

@@ -228,6 +228,10 @@ function getGigData(gigElement) {
             recursweeks += id;
         }
     });
+    let venue = gig.find(".gig-venue").val();
+    let booklabel = gig.find(".gig-booklabel").val();
+    let bookinglink = gig.find(".gig-bookinglink").val();
+    let locallink = gig.find(".gig-local-link").prop("checked");
 
     return {
         id: postid,
@@ -238,7 +242,11 @@ function getGigData(gigElement) {
             dtend: dtend || dtstart,
             dtinfo: dtinfo,
             recursday: recursday,
-            recursweeks: recursweeks
+            recursweeks: recursweeks,
+            venue: venue,
+            booklabel: booklabel,
+            bookinglink: bookinglink,
+            locallink: locallink
         }
     };
 };
@@ -315,6 +323,10 @@ function setEndDateColour(jqGig) {
         if (recursdayValue == 0 && rweekscount>0 ) {
             jqrecursday.val(new Date(dtstart).getDay());
         }
+
+        let locallink = jqg.find(".gig-local-link").prop("checked");
+        console.log("Locallink:" + locallink);
+        jqg.toggleClass("locallink", !!locallink);
         
     })
 }
@@ -378,6 +390,10 @@ function gigTemplateEditingMap(post, map) {
     map["gigdtend"] = post.meta.dtend || "";
     map["gigdayoptions"] = gigdayoptions;
     map["gigweekoptions"] = gigweekoptions;
+    map["venue"] = post.meta.venue || "";
+    map["booklabel"] = post.meta.booklabel || "";
+    map["bookinglink"] = post.meta.bookinglink || "";
+    map["locallink"] = post.meta.locallink ? "checked" : "";
 }
 
 function deleteGig(id) {

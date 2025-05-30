@@ -104,13 +104,17 @@
     width: 100%;
 }
 
-.onedate .gig-dtend-group {
+.gig.onedate .gig-dtend-group {
     opacity: 0.5;
 }
 
-.onedate.recurs .gig-dtend-group::after {
+.gig.onedate.recurs .gig-dtend-group::after {
     content:"forever";
     font-size: small
+}
+
+.gig.locallink .gig-bookinglink-group {
+    opacity: 0.2;
 }
 
 .invalid-field {
@@ -124,6 +128,35 @@ span.show-info {
 span.recurrence {
     font-size:small;
     text-wrap-mode: nowrap;
+}
+
+.venuebooking input {
+    float:right;
+}
+
+
+.gig .bookbutton {
+    float: right;
+    background-color: black;
+    border: 1px solid blue;
+    color: white;
+    border-radius:2px;
+    position: relative;
+}
+
+.gig .bookbutton::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    height: 10px;
+    width: 10px;
+    border-top: 1px solid white;
+    border-right: 1px solid white;
+}
+
+.giglist.editing .bookbutton {
+    display:none;
 }
 
 img.gigpic {

@@ -74,13 +74,21 @@ function gigHtml(post) {
         const nthAndString = nthString.replace(/, ([^,]*)$/, " &amp; $1");
         gigdates += ` <span class='recurrence'>every ${nthAndString} week</span>`;
     }
+    let bookbutton = "";
+    if (post.meta.locallink || post.meta.bookinglink) {
+        const link = post.meta.locallink
+            ? post.link
+            : post.meta.bookinglink;
+        bookbutton = `<button class="bookbutton" onclick="gotolink('${link}')">${post.meta.booklabel || "Book"}</button>`;
+    }
     let template = jQuery("#gigtemplate").html();
     let maps = {
         "gigid": post.id,
         "gigtitle": post.title?.rendered || post.title,
         "gigpic": imgLink,
         "gigdates": gigdates,
-        "gigdtinfo": post.meta.dtinfo || ""
+        "gigdtinfo": post.meta.dtinfo || "",
+        "bookbutton": bookbutton
     };
 
     if (window.gigTemplateEditingMap) {
@@ -103,4 +111,6 @@ function friendlyDate(d = "", day = true) {
     Object.assign(options, { 'day': 'numeric', 'month': 'short', 'year': 'numeric' });
     return new Date(d).toLocaleDateString(undefined, options);
 }
-
+function gotolink(link) {
+    window.open(link);
+}
