@@ -315,19 +315,19 @@ function setEndDateColour(jqGig) {
         let dtstart = jqg.find("input.gig-dtstart").val();
         let dtend = jqg.find("input.gig-dtend").val();
         let jqrecursday = jqg.find(".gig-recursday");
-        let recursdayValue = 1*jqrecursday.val()||0;
+        let recursdayValue = 1 * jqrecursday.val() || 0;
         jqg.toggleClass("onedate", dtstart == dtend);
         jqg.toggleClass("recurs", !!recursdayValue);
         let rweekscount = jqg.find(".gig-recursweek input:checked").length;
 
-        if (recursdayValue == 0 && rweekscount>0 ) {
+        if (recursdayValue == 0 && rweekscount > 0) {
             jqrecursday.val(new Date(dtstart).getDay());
         }
 
         let locallink = jqg.find(".gig-local-link").prop("checked");
         console.log("Locallink:" + locallink);
         jqg.toggleClass("locallink", !!locallink);
-        
+
     })
 }
 
@@ -406,5 +406,13 @@ function deleteGig(id) {
             jQuery(`.gig[data-id="${id}"]`).remove();
             threadFlag(-1);
         })
+    }
+}
+
+function setFromDate(d) {
+    if (!d || d == new Date().toISOString().substring(0, 10)) {
+        window.open(".", "_this");
+    } else {
+        window.open(".?asif=" + d, "_this");
     }
 }

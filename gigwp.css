@@ -33,12 +33,18 @@
     z-index: 2000;
 }
 
+.giglist .controls>label,
 .giglist button {
     padding: 6px;
     color: white;
     background-color: dodgerblue;
     border-radius: 5px;
     border: 0;
+}
+.giglist .controls>label * ,
+.giglist .controls>label 
+{
+    font-size: smaller;
 }
 
 .giglist button:hover {

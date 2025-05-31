@@ -10,7 +10,7 @@
  * Requires Plugins: wp-api
  * Author: Alan Wills
  * Version: 1.1
- * TODO: asif UI; venue, booking link, price;
+ * TODO: price;
  */
 
 /*
@@ -110,7 +110,7 @@ function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
-    return gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue);
+    return gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue, $fromDate);
 }
 
 function gigwp_get_gigs_with_recurs($fromDate, $category)
@@ -417,7 +417,7 @@ function gigwp_gig_template($isSignedIn, $layout = "title image dates", $default
  * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue)
+function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue, $fromDate)
 {
     global $gigwp_category_id;
     ob_start();
@@ -447,6 +447,7 @@ function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultV
                 window.gigiauCategory = "<?= $category ?>";
             </script>
             <div class='controls'>
+                <label>Show as if on: <input type="date" value="<?=$fromDate?>" oninput="setFromDate(this.value)"/></label>
                 <button id="addButton" onclick='addGig()'>Add</button>
                 <button id="editButton" onclick='editGig()'>Edit</button>
             </div>
