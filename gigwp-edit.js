@@ -30,8 +30,8 @@ function refreshGig(jqGig, post) {
 /**
  * Edit button clicked. Enable input fields.
  */
-function editGig() {
-    jQuery(".giglist").toggleClass("editing");
+function editGig(on) {
+    jQuery(".giglist").toggleClass("editing", on);
     setFieldsEditable();
 }
 function setFieldsEditable() {
@@ -65,24 +65,44 @@ function addGig() {
 function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
     if (!window.gigiauCategoryId) return;
     threadFlag(1);
+    const today = new Date().toISOString().substring(0, 10);
+    if (!dtstart || today.localeCompare(dtstart) > 0) {
+        dtstart = today;
+    }
+
+    if (!dtend || dtend.localeCompare(dtstart) < 0) {
+        dtend = dtstart;
+    }
+
     const query = {
-        title: title,
+        title: title.trim(),
         featured_media: img,
-        content: title,
+        content: "",
         status: 'publish',
         categories: [window.gigiauCategoryId],
         meta: {
             'dtstart': dtstart,
             'dtend': dtend,
-            'dtinfo': dtinfo
+            'dtinfo': dtinfo,
+            "recursday": 0
         }
     };
+    // https://developer.wordpress.org/rest-api/using-the-rest-api/backbone-javascript-client/
     const post = new wp.api.models.Post(query);
     post.save().done(confirmedPost => {
         confirmedPost.meta = query.meta; // confirmed doesn't return meta
         insertGig(confirmedPost);
-        threadFlag(-1);
+        threadFlag(-1, () => {
+            jQuery('html, body').animate({
+                scrollTop: jQuery("#gig-top").offset().top
+            }, 2000);
+            editGig(true);
+        });
+
         //console.log(" uploaded ", query.title);
+    }).catch(e => {
+        console.log("newPost: " + e);
+        threadFlag(-1);
     });
 }
 
@@ -97,7 +117,7 @@ function beforeUnloadHandler(event) {
 
 var threads = 0;
 
-function threadFlag(count) {
+function threadFlag(count, f) {
     threads += count;
     const flag = jQuery(".giglist");
     if (threads > 0) {
@@ -107,6 +127,7 @@ function threadFlag(count) {
     } else {
         flag.removeClass("edit-in-progress");
         window.removeEventListener("beforeunload", beforeUnloadHandler);
+        if (f) f();
     }
 }
 
@@ -141,7 +162,7 @@ function openMediaPopup() {
             });
             imageSet.forEach(img => {
                 let dtstart = dtend = dtinfo = "";
-                let title = "";
+                let title = "" + Date.now();
                 try {
                     // You can put dates and info in the caption: YYYY-MM-DD YYYY-MM-DD info
                     if (img.caption?.trim()) {
@@ -154,6 +175,8 @@ function openMediaPopup() {
                             title = (fileNameParts[1] || "").replaceAll("-", " ");
                             [dtstart, dtend, dtinfo] = readDates(fileNameParts[2]);
                             dtinfo = dtinfo.replaceAll("-", " ");
+                        } else {
+                            title = img.title;
                         }
                     }
                 } catch (e) {

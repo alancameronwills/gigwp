@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.0
+ * @version 1.1
  * @wordpress-plugin
  * 
  * Plugin Name: Gigiau Events Posters
@@ -132,7 +132,7 @@ function gigwp_get_gigs_with_recurs($fromDate, $category)
         AND pm2.meta_key = 'dtstart'
         AND pm3.meta_key = 'recursday'
         AND (
-            pm.meta_value > '$fromDate'
+            pm.meta_value >= '$fromDate'
             OR (
                 pm3.meta_value > 0
                 AND pm.meta_value = pm2.meta_value
@@ -308,7 +308,7 @@ function gigwp_gig_template($isSignedIn, $layout = "title image dates", $default
 {
     ob_start();
 ?>
-    <div class="gig" data-id="%gigid">
+    <div id="gig-top" class="gig" data-id="%gigid">
         <?php
         $parts = explode(" ", $layout);
         foreach ($parts as $part) {
