@@ -77,7 +77,7 @@ function gigHtml(post) {
     let bookbutton = "";
     if (post.meta.locallink || post.meta.bookinglink) {
         const link = post.meta.locallink
-            ? post.link
+            ? post.link || "./?p=" + post.id
             : post.meta.bookinglink;
         bookbutton = `<button class="bookbutton" onclick="gotolink('${link}')">${post.meta.booklabel || "Book"}</button>`;
     }
@@ -87,8 +87,9 @@ function gigHtml(post) {
         "gigtitle": post.title?.rendered || post.title,
         "gigpic": imgLink,
         "gigdates": gigdates,
-        "gigdtinfo": post.meta.dtinfo || "",
-        "bookbutton": bookbutton
+        "gigdtinfo": post.meta?.dtinfo || "",
+        "bookbutton": bookbutton,
+        "venue" : post.meta?.venue || ""
     };
 
     if (window.gigTemplateEditingMap) {

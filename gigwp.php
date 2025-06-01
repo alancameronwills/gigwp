@@ -2,15 +2,15 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.1
+ * @version 1.2
  * @wordpress-plugin
  * 
  * Plugin Name: Gigiau Events Posters
  * Description: Events listings based on posters. 
  * Requires Plugins: wp-api
  * Author: Alan Wills
- * Version: 1.1
- * TODO: price;
+ * Version: 1.2
+ * TODO: upload - show progress; ! broken initial display; nth week, unmonthed; venue option in shortcode
  */
 
 /*
@@ -70,12 +70,12 @@ function gigwp_events_list_shortcode($attributes = [])
     global $gigwp_category_id;
     extract(shortcode_atts(
         [
-            'layout' => "title image dates", // order of appearance in each gig
+            'layout' => "image title dates venue", // order of appearance in each gig
             'width' => 340,  // px width of images
             'asIfDate' => null, // Display from this date - can also use ?asif=YYYY-MM-DD
             'category' => GIGWP_CATEGORY,
             'popImages' => true, // expand image on user click
-            'venue' => "Newport Memorial Hall"
+            'venue' => ""
         ],
         $attributes
     ));
@@ -304,7 +304,7 @@ function gigwp_fdate($dt)
  * @param(string) $layout Order of presentation of "title image dates" per gig
  * 
  */
-function gigwp_gig_template($isSignedIn, $layout = "title image dates", $defaultVenue = "")
+function gigwp_gig_template($isSignedIn, $layout = "venue image title dates", $defaultVenue = "")
 {
     ob_start();
 ?>
