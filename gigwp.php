@@ -7,7 +7,6 @@
  * 
  * Plugin Name: Gigiau Events Posters
  * Description: Events listings based on posters. 
- * Requires Plugins: wp-api
  * Author: Alan Wills
  * Version: 1.2
  * TODO: upload - show progress; ! broken initial display; nth week, unmonthed; venue option in shortcode

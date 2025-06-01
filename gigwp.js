@@ -57,8 +57,8 @@ function fillGigList(gigListJson) {
 
 
 function gigHtml(post) {
-
-    let imgLink = post.thumbnail_image || post.pic || (post.link || "").replace(/p=[0-9]+/, "p=" + post.featured_media);
+    
+    let imgLink = post.thumbnail_image || post.pic ||  "/?p=" + post.featured_media;
     let gigdates = friendlyDate(post.meta.dtstart) +
         (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
     if (post.meta.recursday && post.meta.recursweeks) {
