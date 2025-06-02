@@ -494,3 +494,56 @@ add_action("rest_insert_post", function ($post, $request, $creating) {
         }
     }
 }, 10, 3);
+
+
+// ********* Template page for gigs  ************
+
+// Register the page template
+function gigwp_add_page_template($templates)
+{
+    $templates['gig-post.php'] = 'Gig page';
+    return $templates;
+}
+//add_filter('theme_page_templates', 'gigwp_add_page_template');
+
+// Load the template file
+function gigwp_load_page_template($template)
+{
+    echo "<pre>template: ".json_encode($template, JSON_PRETTY_PRINT)."</pre>";
+    global $post;
+    $isGig = false;
+    foreach (get_the_category($post->ID) as $cat) {
+        if ($cat->name == GIGWP_CATEGORY) {
+            $isGig = true;
+            break;
+        }
+    }
+
+    if ($isGig) {
+        echo "<pre> IS GIG </pre>";
+        $template = plugin_dir_path(__FILE__) . 'templates/gig-post.php';
+    }
+    return $template;
+}
+//add_filter('template_include', 'gigwp_load_page_template');
+
+function gigwp_modify_get_block_template_conditional($block_template, $id, $template_type) { 
+    //if ($template_type == 'wp_template_part') {
+        // Perform specific modifications
+        echo "<pre>$block_template";
+        echo "---------";
+        echo "$template_type</pre>";
+    //}
+    return $block_template; 
+}
+
+//add_filter("get_block_template", "gigwp_modify_get_block_template_conditional", 10, 3);
+
+function gigwp_get_the_block_template_html() {
+    
+	global $_wp_current_template_id, $_wp_current_template_content, $wp_embed, $wp_query;
+
+    echo "<pre>$_wp_current_template_id</pre>";
+    echo "<pre>" . str_replace("<", "{", $_wp_current_template_content) . "</pre>";
+    return get_the_block_template_html();
+}
