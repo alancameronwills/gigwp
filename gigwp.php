@@ -446,7 +446,7 @@ function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultV
                 window.gigiauCategory = "<?= $category ?>";
             </script>
             <div class='controls'>
-                <label>Show as if on: <input type="date" value="<?=$fromDate?>" oninput="setFromDate(this.value)"/></label>
+                <label>Show as if on: <input type="date" value="<?= $fromDate ?>" oninput="setFromDate(this.value)" /></label>
                 <button id="addButton" onclick='addGig()'>Add</button>
                 <button id="editButton" onclick='editGig()'>Edit</button>
             </div>

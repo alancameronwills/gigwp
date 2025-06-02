@@ -15,6 +15,13 @@
     box-sizing: border-box;
 }
 
+
+
+.giglist {
+    margin: 0 -20px;
+}
+
+
 .giglist>.gigs {
     display: flex;
     flex-wrap: wrap;
@@ -41,9 +48,9 @@
     border-radius: 5px;
     border: 0;
 }
-.giglist .controls>label * ,
-.giglist .controls>label 
-{
+
+.giglist .controls>label *,
+.giglist .controls>label {
     font-size: smaller;
 }
 
@@ -88,7 +95,7 @@
 .gig {
     background-color: white;
     overflow: hidden;
-    position:relative;
+    position: relative;
 }
 
 .gig input {
@@ -107,7 +114,7 @@
 }
 
 .gig-title {
-	font-size: large;
+    font-size: large;
 }
 
 .gig-dtinfo {
@@ -119,7 +126,7 @@
 }
 
 .gig.onedate.recurs .gig-dtend-group::after {
-    content:"forever";
+    content: "forever";
     font-size: small
 }
 
@@ -136,12 +143,12 @@ span.show-info {
 }
 
 span.recurrence {
-    font-size:small;
+    font-size: small;
     text-wrap-mode: nowrap;
 }
 
 .venuebooking input {
-    float:right;
+    float: right;
 }
 
 
@@ -150,7 +157,7 @@ span.recurrence {
     background-color: black;
     border: 1px solid blue;
     color: white;
-    border-radius:2px;
+    border-radius: 2px;
     position: relative;
 }
 
@@ -166,7 +173,7 @@ span.recurrence {
 }
 
 .giglist.editing .bookbutton {
-    display:none;
+    display: none;
 }
 
 img.gigpic {
@@ -181,6 +188,7 @@ img.gigpic {
     display: flex;
     justify-content: flex-end;
 }
+
 .delete-button {
     inset: 1px solid red;
 }

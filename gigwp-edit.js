@@ -91,19 +91,28 @@ function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
     const post = new wp.api.models.Post(query);
     post.save().done(confirmedPost => {
         confirmedPost.meta = query.meta; // confirmed doesn't return meta
-        insertGig(confirmedPost);
-        threadFlag(-1, () => {
-            jQuery('html, body').animate({
-                scrollTop: jQuery("#gig-top").offset().top
-            }, 2000);
-            editGig(true);
+        fetch(`${location.origin}/wp-json/wp/v2/media/${confirmedPost.featured_media}`)
+            .then(r => r.json()).then(r => {
+                confirmedPost.pic = r.guid?.rendered;
+                insertGig(confirmedPost);
+                threadFlag(-1, () => {
+                    jQuery('html, body').animate({
+                        scrollTop: jQuery("#gig-top").offset().top
+                    }, 2000);
+                    editGig(true);
+                });
+            })
+            .catch(x => {
+                threadFlag(-1, () => {
+                    location.reload();
+                }
+                );
+            })
+    })
+        .catch(e => {
+            console.log("newPost: " + e);
+            threadFlag(-1);
         });
-
-        //console.log(" uploaded ", query.title);
-    }).catch(e => {
-        console.log("newPost: " + e);
-        threadFlag(-1);
-    });
 }
 
 
