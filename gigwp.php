@@ -40,10 +40,10 @@ $gigwp_category_id;
 function gigwp_nqscripts()
 {
     if (current_user_can('edit_others_pages')) {
-        wp_enqueue_script("gigwpeditjs", "/wp-content/plugins/gigwp/gigwp-edit.js", ["jquery-core"]);
+        wp_enqueue_script("gigwpeditjs", plugin_dir_url( __FILE__ ) . "gigwp-edit.js", ["jquery-core"]);
     }
-    wp_enqueue_script("gigwpjs", '/wp-content/plugins/gigwp/gigwp.js', ["jquery-core"]);
-    wp_enqueue_style("gigwpcss", '/wp-content/plugins/gigwp/gigwp.css');
+    wp_enqueue_script("gigwpjs", plugin_dir_url( __FILE__ ).'gigwp.js', ["jquery-core"]);
+    wp_enqueue_style("gigwpcss", plugin_dir_url( __FILE__ ).'gigwp.css');
 }
 add_action('wp_enqueue_scripts', 'gigwp_nqscripts');
 
