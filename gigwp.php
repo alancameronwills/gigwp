@@ -2,14 +2,14 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.2
+ * @version 1.3
  * @wordpress-plugin
  * 
  * Plugin Name: Gigiau Events Posters
  * Description: Events listings based on posters. 
  * Author: Alan Wills
- * Version: 1.2
- * TODO: upload - show progress; ! broken initial display; nth week, unmonthed; venue option in shortcode
+ * Version: 1.3
+ * TODO: upload - show progress; nth week, unmonthed
  */
 
 /*
