@@ -2,13 +2,13 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.3
+ * @version 1.3.1
  * @wordpress-plugin
  * 
  * Plugin Name: Gigiau Events Posters
  * Description: Events listings based on posters. 
  * Author: Alan Wills
- * Version: 1.3
+ * Version: 1.3.1
  * TODO: upload - show progress; nth week, unmonthed
  */
 
@@ -74,7 +74,8 @@ function gigwp_events_list_shortcode($attributes = [])
             'asIfDate' => null, // Display from this date - can also use ?asif=YYYY-MM-DD
             'category' => GIGWP_CATEGORY,
             'popImages' => true, // expand image on user click
-            'venue' => ""
+            'venue' => "",
+            'book' => "Book Tickets"
         ],
         $attributes
     ));
@@ -90,12 +91,12 @@ function gigwp_events_list_shortcode($attributes = [])
     }
 
 
-    return gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $_GET['json'] ?? false, $venue);
+    return gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $_GET['json'] ?? false, $venue, $DefaultBookButtonLabel);
 }
 
 
 
-function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json, $defaultVenue)
+function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel)
 {
     $postDated = gigwp_get_gigs_with_recurs($fromDate, $category);
     if ($json == 2) {
@@ -109,7 +110,7 @@ function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
-    return gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue, $fromDate);
+    return gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel);
 }
 
 function gigwp_get_gigs_with_recurs($fromDate, $category)
@@ -416,7 +417,7 @@ function gigwp_gig_template($isSignedIn, $layout = "venue image title dates", $d
  * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue, $fromDate)
+function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel)
 {
     global $gigwp_category_id;
     ob_start();
@@ -458,6 +459,7 @@ function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultV
         </div>
     </div>
     <script>
+        window.DefaultBookButtonLabel = "<?= str_replace('"','',$DefaultBookButtonLabel) ?>";
         jQuery(() => {
             fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html());
 

@@ -79,7 +79,7 @@ function gigHtml(post) {
         const link = post.meta.locallink
             ? post.link || "./?p=" + post.id
             : post.meta.bookinglink;
-        bookbutton = `<button class="bookbutton" onclick="gotolink('${link}')">${post.meta.booklabel || "Book"}</button>`;
+        bookbutton = `<button class="bookbutton" onclick="gotolink('${link}')">${post.meta.booklabel || window.DefaultBookButtonLabel || "Book"}</button>`;
     }
     let template = jQuery("#gigtemplate").html();
     let maps = {
