@@ -30,7 +30,9 @@ function refreshGig(jqGig, post) {
 /**
  * Edit button clicked. Enable input fields.
  */
-function editGig(on) {
+function editGig(event, on=null) {
+    event?.stopPropagation?.();
+    event?.preventDefault?.();
     jQuery(".giglist").toggleClass("editing", on);
     setFieldsEditable();
 }
@@ -49,7 +51,9 @@ function setFieldsEditable() {
 /**
  * Add button clicked. User chooses posters.
  */
-function addGig() {
+function addGig(event) {
+    event?.stopPropagation?.();
+    event?.preventDefault?.();
     openMediaPopup();
 }
 
@@ -99,7 +103,7 @@ function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
                     jQuery('html, body').animate({
                         scrollTop: jQuery("#gig-top").offset().top
                     }, 2000);
-                    editGig(true);
+                    editGig(null, true);
                 });
             })
             .catch(x => {

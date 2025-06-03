@@ -40,10 +40,10 @@ $gigwp_category_id;
 function gigwp_nqscripts()
 {
     if (current_user_can('edit_others_pages')) {
-        wp_enqueue_script("gigwpeditjs", plugin_dir_url( __FILE__ ) . "gigwp-edit.js", ["jquery-core"]);
+        wp_enqueue_script("gigwpeditjs", plugin_dir_url(__FILE__) . "gigwp-edit.js", ["jquery-core"]);
     }
-    wp_enqueue_script("gigwpjs", plugin_dir_url( __FILE__ ).'gigwp.js', ["jquery-core"]);
-    wp_enqueue_style("gigwpcss", plugin_dir_url( __FILE__ ).'gigwp.css');
+    wp_enqueue_script("gigwpjs", plugin_dir_url(__FILE__) . 'gigwp.js', ["jquery-core"]);
+    wp_enqueue_style("gigwpcss", plugin_dir_url(__FILE__) . 'gigwp.css');
 }
 add_action('wp_enqueue_scripts', 'gigwp_nqscripts');
 
@@ -445,11 +445,12 @@ function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultV
             <script>
                 window.gigiauCategoryId = "<?= $gigwp_category_id ?>";
                 window.gigiauCategory = "<?= $category ?>";
+                window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $DefaultBookButtonLabel) ?>";
             </script>
             <div class='controls'>
                 <label>Show as if on: <input type="date" value="<?= $fromDate ?>" oninput="setFromDate(this.value)" /></label>
-                <button id="addButton" onclick='addGig()'>Add</button>
-                <button id="editButton" onclick='editGig()'>Edit</button>
+                <button id="addButton" onclick='addGig(event)'>Add</button>
+                <button id="editButton" onclick='editGig(event)'>Edit</button>
             </div>
         <?php }
         // On page load, list is inserted here.
@@ -459,7 +460,6 @@ function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultV
         </div>
     </div>
     <script>
-        window.DefaultBookButtonLabel = "<?= str_replace('"','',$DefaultBookButtonLabel) ?>";
         jQuery(() => {
             fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html());
 
