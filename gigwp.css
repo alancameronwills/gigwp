@@ -96,6 +96,7 @@
     background-color: white;
     overflow: hidden;
     position: relative;
+    border: 1px solid gray;
 }
 
 .gig input {
@@ -154,9 +155,9 @@ span.recurrence {
 
 .gig .bookbutton {
     float: right;
-    background-color: black;
+    background-color: black !important;
     border: 1px solid blue;
-    color: white;
+    color: white !important;
     border-radius: 2px;
     position: relative;
 }
