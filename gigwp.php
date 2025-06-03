@@ -91,7 +91,7 @@ function gigwp_events_list_shortcode($attributes = [])
     }
 
 
-    return gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $_GET['json'] ?? false, $venue, $DefaultBookButtonLabel);
+    return gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $_GET['json'] ?? false, $venue, $book);
 }
 
 
