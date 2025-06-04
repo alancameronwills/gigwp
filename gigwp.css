@@ -43,8 +43,8 @@
 .giglist .controls>label,
 .giglist button {
     padding: 6px;
-    color: white;
-    background-color: dodgerblue;
+    color: white !important;
+    background-color: dodgerblue !important;
     border-radius: 5px;
     border: 0;
 }
