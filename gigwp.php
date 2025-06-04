@@ -9,7 +9,7 @@
  * Description: Events listings based on posters. 
  * Author: Alan Wills
  * Version: 1.3.2
- * TODO: upload - show progress; nth week, unmonthed
+ * TODO: scrunched editing prompts; upload - show progress; nth week, unmonthed
  */
 
 /*
@@ -70,7 +70,8 @@ function gigwp_events_list_shortcode($attributes = [])
     extract(shortcode_atts(
         [
             'layout' => "image title dates venue", // order of appearance in each gig
-            'width' => 340,  // px width of images
+            'width' => 340,  // px width of images,
+            'height' => 0,   // px height of images - defaults to sqrt(2)*width
             'asIfDate' => null, // Display from this date - can also use ?asif=YYYY-MM-DD
             'category' => GIGWP_CATEGORY,
             'popImages' => true, // expand image on user click
@@ -79,6 +80,10 @@ function gigwp_events_list_shortcode($attributes = [])
         ],
         $attributes
     ));
+
+    if ($height == 0) {
+        $height = floor(1.4214 * $width);
+    }
 
     // If this is first time:
     $gigwp_category_id = wp_create_category($category);
@@ -91,12 +96,12 @@ function gigwp_events_list_shortcode($attributes = [])
     }
 
 
-    return gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $_GET['json'] ?? false, $venue, $book);
+    return gigwp_gig_list($fromDate, $category, $width, $height, $popImages, $layout, $_GET['json'] ?? false, $venue, $book);
 }
 
 
 
-function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel)
+function gigwp_gig_list($fromDate, $category, $width, $height, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel)
 {
     $postDated = gigwp_get_gigs_with_recurs($fromDate, $category);
     if ($json == 2) {
@@ -110,7 +115,7 @@ function gigwp_gig_list($fromDate, $category, $width, $popImages, $layout, $json
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
-    return gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel);
+    return gigwp_gig_show($gigs, $width, $height, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel);
 }
 
 function gigwp_get_gigs_with_recurs($fromDate, $category)
@@ -417,7 +422,7 @@ function gigwp_gig_template($isSignedIn, $layout = "venue image title dates", $d
  * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel)
+function gigwp_gig_show($gigs, $width, $height, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel)
 {
     global $gigwp_category_id;
     ob_start();
@@ -438,6 +443,8 @@ function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultV
 
         .gigpic {
             width: <?= $width ?>px;
+            height: <?= $height ?>px;
+            object-fit: contain;
         }
     </style>
     <div class='giglist'>
@@ -449,8 +456,9 @@ function gigwp_gig_show($gigs, $width, $category, $popImages, $layout, $defaultV
             </script>
             <div class='controls'>
                 <label>Show as if on: <input type="date" value="<?= $fromDate ?>" oninput="setFromDate(this.value)" /></label>
-                <button id="addButton" onclick='addGig(event)'>Add</button>
-                <button id="editButton" onclick='editGig(event)'>Edit</button>
+                <button id="addButton" title="add event posters" onclick='addGig(event)'>Add</button>
+                <button id="editButton" title="edit the event details" onclick='editGig(event)'>Edit</button>
+                <button id="helpButton" title="help" onclick='helpGigs(event)'>?</button>
             </div>
         <?php }
         // On page load, list is inserted here.

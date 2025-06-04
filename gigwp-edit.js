@@ -3,6 +3,12 @@ var gigUpdateHandlers = [];
 
 // ************* Editing gigs ***********
 
+function helpGigs (event) {
+    event?.stopPropagation?.();
+    event?.preventDefault?.();
+    window.open("https://github.com/alancameronwills/gigwp#","help","")
+}
+
 /**
  * Show new post on page without reloading page
  * @param {} post 
