@@ -6,7 +6,7 @@ var gigUpdateHandlers = [];
 function helpGigs (event) {
     event?.stopPropagation?.();
     event?.preventDefault?.();
-    window.open("https://github.com/alancameronwills/gigwp/blob/extend-height/README.md","help","")
+    window.open("https://github.com/alancameronwills/gigwp/blob/main/README.md","help","")
 }
 
 /**
