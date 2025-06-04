@@ -59,12 +59,12 @@ There are some options you can set in the `[gigiau]` shortcode. Click WordPress 
     [gigiau layout="title image dates venue" width="320" ]
 ```
 
-* `layout` - Sets the order in which parts appear in each event. Parts you can set are: `image book title dates venue`
-* `width` - in pixels. Defaults to 340
-* `height` - in pixels. Posters are padded with empty space to that height. Set to 0 to prevent padding. Defaults to 1.412 x width. If you have shots of A3 or A4 posters in portrait orientation, this will suit them.
-* `border` - true (default) or false to prevent a border round posters
-* `background` - a colour, such as `lightgray, gray, white, whitesmoke, aliceblue, black, blue, ...` or #CCFFAA
-* `book` - The default label of the link button, such as "More info" or "Book tickets". You can change it per event.
+* `layout="image booking title dates venue"` - Re-order the words to change the layout of each event
+* `width="340"` - in pixels of each event.
+* `height="420"` - in pixels. Posters are padded with empty space to that height. Set to 0 to prevent padding. Leave it out altogether if you have A4 posters, 1.412 x width.
+* `border="false"` - to prevent a border round posters
+* `background="whitesmoke"` - a colour, such as `lightgray, gray, white, aliceblue, black, blue, ...` or `#CCFFAA`
+* `book="More info"` - The default label of the link button, such as "Book tickets". You can change it per event.
 
 ## Event pages
 
