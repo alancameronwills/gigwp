@@ -213,7 +213,7 @@ function gigwp_get_gigs($fromDate, $category, $postIds = [])
         $gm = &$gigs[$i]['meta']; // Must be reference, else we are writing to a copy
         if (strcmp($gm['dtstart'], $fromDate) < 0 && $gm['recursday']) {
             // Recurrence - set the start date
-            $nextDate = nthDayOfMonth($gm['recursday'], $gm['recursweeks'], new DateTime($fromDate));
+            $nextDate = gigwp_nthDayOfMonth($gm['recursday'], $gm['recursweeks'], new DateTime($fromDate));
             $nextDateString = date_format($nextDate, 'Y-m-d');
             $gm['dtsince'] = $gm['dtstart']; // keep old start date
             if ($gm['dtstart'] == $gm['dtend']) {
@@ -230,14 +230,7 @@ function gigwp_get_gigs($fromDate, $category, $postIds = [])
     return $gigs;
 }
 
-function dmsg($s)
-{
-    echo "<div style='z-index:5000; background-color:white;position:fixed;top:40px;left:0;'>$s</div>";
-}
-
-
-
-function nthDayOfMonth($dayOfWeek, $weeksInMonth, $today)
+function gigwp_nthDayOfMonth($dayOfWeek, $weeksInMonth, $today)
 {
     if (!$today) {
         $today = new DateTime('NOW');
