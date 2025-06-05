@@ -29,6 +29,7 @@
     align-items: flex-start;
     gap: 20px;
     padding: 10px;
+    color: black;
 }
 
 .giglist .controls {
@@ -52,6 +53,7 @@
 .giglist .controls>label *,
 .giglist .controls>label {
     font-size: smaller;
+    margin: 2px 2px 0 2px;
 }
 
 .giglist button:hover {
@@ -94,6 +96,7 @@
 
 .gig {
     background-color: white;
+    color: black;
     overflow: hidden;
     position: relative;
     border: 1px solid gray;
