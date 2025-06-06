@@ -2,14 +2,14 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.3.4
+ * @version 1.4
  * @wordpress-plugin
  * 
  * Plugin Name: Gigiau Events Posters
  * Description: Events listings based on posters. 
  * Author: Alan Cameron Wills
- * Version: 1.3.4
- * TODO: scrunched editing prompts; upload - show progress; nth week, unmonthed
+ * Version: 1.4
+ * TODO: srcset; !scrunched editing prompts; upload - show progress; nth week, unmonthed
  */
 
 /*
@@ -43,7 +43,7 @@ function gigwp_nqscripts()
         wp_enqueue_script("gigwpeditjs", plugin_dir_url(__FILE__) . "gigwp-edit.js", ["jquery-core"]);
     }
     wp_enqueue_script("gigwpjs", plugin_dir_url(__FILE__) . 'gigwp.js', ["jquery-core"]);
-    wp_enqueue_style("gigwpcss", plugin_dir_url(__FILE__) . 'gigwp.css');
+    //wp_enqueue_style("gigwpcss", plugin_dir_url(__FILE__) . 'gigwp.css');
 }
 add_action('wp_enqueue_scripts', 'gigwp_nqscripts');
 
@@ -306,7 +306,7 @@ function gigwp_gig_template($isSignedIn, $layout = "venue image title dates", $d
 {
     ob_start();
 ?>
-    <div id="gig-top" class="gig" data-id="%gigid">
+    <div class="gig" data-id="%gigid">
         <?php
         $parts = explode(" ", $layout);
         foreach ($parts as $part) {
@@ -429,46 +429,71 @@ function gigwp_gig_show($gigs, $width, $height, $category, $popImages, $layout, 
     <script id="gigtemplate" type="text/html">
         <?= gigwp_gig_template(current_user_can('edit_others_pages'), $layout, $defaultVenue) ?>
     </script>
-    <style>
-        .gig>div {
-            width: <?= $width ?>px;
-        }
-
-        .gigpic {
-            width: <?= $width ?>px;
-            height: <?= $height ?>px;
-            object-fit: contain;
-        }
-    </style>
-    <div class='giglist'>
-        <?php if (current_user_can('edit_others_pages')) {  ?>
-            <script>
-                window.gigiauCategoryId = "<?= $gigwp_category_id ?>";
-                window.gigiauCategory = "<?= $category ?>";
-                window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $DefaultBookButtonLabel) ?>";
-            </script>
-            <div class='controls'>
-                <label>Show as if on: <input type="date" value="<?= $fromDate ?>" oninput="setFromDate(this.value)" /></label>
-                <button id="addButton" title="add event posters" onclick='addGig(event)'>Add</button>
-                <button id="editButton" title="edit the event details" onclick='editGig(event)'>Edit</button>
-                <button id="helpButton" title="help" onclick='helpGigs(event)'>?</button>
-            </div>
-        <?php }
-        // On page load, list is inserted here.
-        ?>
-        <div class='gigs'>
-
-        </div>
-    </div>
     <script>
+        customElements.define("gigwp-capsule", class extends HTMLElement {
+            constructor() {
+                super();
+                this.attachShadow({
+                    mode: "open"
+                });
+            }
+            plus(element) {
+                this.shadowRoot.appendChild(element);
+            }
+            createShadow() {
+                // Move explicit subtree into shadow
+                Array.from(this.children).forEach(element => this.plus(element));
+                return this.shadowRoot;
+            }
+        });
+    </script>
+    <gigwp-capsule>
+        <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigwp.css" > 
+        <div id="giglist" class="giglist">
+            <style>
+                .gig>div {
+                    width: <?= $width ?>px;
+                }
+
+                .gigpic {
+                    width: <?= $width ?>px;
+                    height: <?= $height ?>px;
+                    object-fit: contain;
+                }
+            </style>
+            <?php if (current_user_can('edit_others_pages')) {  ?>
+                <script>
+                    window.gigiauCategoryId = "<?= $gigwp_category_id ?>";
+                    window.gigiauCategory = "<?= $category ?>";
+                    window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $DefaultBookButtonLabel) ?>";
+                </script>
+                <div class='controls'>
+                    <label>Show as if on: <input type="date" value="<?= $fromDate ?>" oninput="setFromDate(this.value)" /></label>
+                    <button id="addButton" title="add event posters" onclick='addGig(event)'>Add</button>
+                    <button id="editButton" title="edit the event details" onclick='editGig(event)'>Edit</button>
+                    <button id="helpButton" title="help" onclick='helpGigs(event)'>?</button>
+                </div>
+            <?php }
+            ?>
+            <div class='gigs'>
+
+            </div>
+        </div>
+    </gigwp-capsule>
+    <script>
+        function gigwp(selector) {
+            return selector ? window.gigwpCapsuleRoot.querySelector(selector) : window.gigwpCapsuleRoot;
+        }
+        function gigwpa(selector) {
+            return window.gigwpCapsuleRoot.querySelectorAll(selector);
+        }
         jQuery(() => {
+            window.gigwpCapsuleRoot = document.querySelector("gigwp-capsule").createShadow();
             fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html());
-
-
             <?php
             if ($popImages) {
             ?>
-                nevernExpandImages();
+                gigwpExpandImages();
             <?php
             }
             ?>

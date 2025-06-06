@@ -1,45 +1,24 @@
 
 
-// ****** Nevern Expanding Images **********
+// ****** Expanding Images **********
 
-function nevernExpandImg(src) {
-    //window.open(src, "expandedpix");
-    if (src) {
-        jQuery("#nevernBigPicImg")[0].src = src;
-        jQuery("#nevernBigPic").show();
-    } else {
-        jQuery('#nevernBigPic').hide();
-        jQuery("#nevernBigPicImg")[0].src = "";
-    }
-}
 
-function setXIhandler(jq) {
-    jq.click(function () {
-        let img = jQuery(this)[0];
-        nevernExpandImg(img.src);
-    }).css("cursor", "pointer");
-}
-
-function nevernExpandImages() {
-    let html = `<div ` +
-        `style="position:fixed;top:0;left:0;height:100%;width:100%;background-color:black;z-index:99999;cursor:pointer;display:none;" ` +
-        `id="nevernBigPic" onclick="nevernExpandImg('')" onkeydown="nevernExpandImg('')">` +
-        `<img id="nevernBigPicImg" alt="image expanded to fill screen - ESC to collapse"` +
-        ` style="height:100%;width:100%;object-fit:contain;"  onkeydown="nevernExpandImg('')" src=""/></div>`;
-    jQuery(document.body).append(html);
-
-    jQuery("body").keydown(event => {
-        if (event.keyCode === 27) nevernExpandImg();
-    });
-
-    setXIhandler(jQuery(".gig img"));
-
-    if (window.gigUpdateHandlers) {
-        gigUpdateHandlers.push(jqgig => {
-            setXIhandler(jqgig.find("img"));
-        });
-    }
-
+function gigwpExpandImages() {
+    gigwpa("img").forEach(i => i.addEventListener("click", e => {
+        e.preventDefault();
+        e.stopPropagation();
+        gigwp().expandedImage = e.target.classList.toggle("expand-image")
+            ? e.target
+            : null;
+    }));
+    document.addEventListener("keydown", e => {
+        if (e.key == "Escape") {
+            if (gigwp().expandedImage) {
+                gigwp().expandedImage.classList.remove("expand-image");
+                gigwp().expandedImage = null;
+            }
+        }
+    })
 }
 
 // ********* Display gigs ************
@@ -51,14 +30,18 @@ function nevernExpandImages() {
 function fillGigList(gigListJson) {
     const gigList = JSON.parse(gigListJson);
     let gigListHtml = gigList.map(gig => gigHtml(gig)).join("\n");
-    jQuery(".giglist>.gigs").html(gigListHtml);
-    if (window?.setHandlers) setHandlers(jQuery(".gig"));
+    gigwp(".giglist>.gigs").innerHTML = gigListHtml;
+    if (window?.setHandlers) setHandlers(gigwpa(".gig"));
 }
 
-
+/**
+ * Map a gig object to a displayed event
+ * @param {Gig} post 
+ * @returns HTML string
+ */
 function gigHtml(post) {
-    
-    let imgLink = post.thumbnail_image || post.pic ||  "/?p=" + post.featured_media;
+
+    let imgLink = post.thumbnail_image || post.pic || "/?p=" + post.featured_media;
     let gigdates = friendlyDate(post.meta.dtstart) +
         (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
     if (post.meta.recursday && post.meta.recursweeks) {
@@ -89,7 +72,7 @@ function gigHtml(post) {
         "gigdates": gigdates,
         "gigdtinfo": post.meta?.dtinfo || "",
         "bookbutton": bookbutton,
-        "venue" : post.meta?.venue || ""
+        "venue": post.meta?.venue || ""
     };
 
     if (window.gigTemplateEditingMap) {
@@ -100,7 +83,7 @@ function gigHtml(post) {
     Object.getOwnPropertyNames(maps).forEach(v => {
         show = show.replaceAll(`%${v}`, maps[v]);
     });
-    return show;
+    return show.trim();
 }
 
 function friendlyDate(d = "", day = true) {

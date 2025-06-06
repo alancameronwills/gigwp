@@ -1,3 +1,18 @@
+
+
+img.expand-image {
+    width:100vw;
+    height: 100vh;
+    max-width:100vw;
+    max-height:100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: black;
+    object-fit:contain;
+    z-index:3000;
+}
+
 .giglist {
     font-family: 'Roboto', sans-serif;
     font-weight: 400;
@@ -44,8 +59,8 @@
 .giglist .controls>label,
 .giglist button {
     padding: 6px;
-    color: white !important;
-    background-color: dodgerblue !important;
+    color: white;
+    background-color: dodgerblue;
     border-radius: 5px;
     border: 0;
 }

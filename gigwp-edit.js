@@ -2,55 +2,59 @@ var gigUpdateHandlers = [];
 
 
 // ************* Editing gigs ***********
-
-function helpGigs (event) {
+/**
+ * On clicking help button
+ * @param {*} event 
+ */
+function helpGigs(event) {
     event?.stopPropagation?.();
     event?.preventDefault?.();
-    window.open("https://github.com/alancameronwills/gigwp/blob/main/README.md","help","")
+    window.open("https://github.com/alancameronwills/gigwp/blob/main/README.md", "help", "");
 }
 
 /**
  * Show new post on page without reloading page
- * @param {} post 
+ * @param (post) post 
  */
 function insertGig(post) {
-    let jqShow = jQuery(gigHtml(post));
-    jQuery(".giglist>.gigs").prepend(jqShow);
-    setHandlers(jqShow);
+    let postDom = jQuery.parseHTML(gigHtml(post))[0];
+    gigwp(".giglist>.gigs").prepend(postDom);
+    setHandlers(postDom);
     setFieldsEditable();
-    return jqShow;
+    return postDom;
 }
 
 /**
  * Redisplay after editing
  * @param {} post 
  */
-function refreshGig(jqGig, post) {
-    let jqShow = jQuery(gigHtml(post));
-    jqGig.replaceWith(jqShow);
-    setHandlers(jqShow);
+function refreshGig(gig, post) {
+    let html = gigHtml(post);
+    let postDom = jQuery.parseHTML(html)[0];
+    gig.replaceWith(postDom);
+    setHandlers(postDom);
     setFieldsEditable();
-    return jqShow;
+    return postDom;
 }
 
 /**
  * Edit button clicked. Enable input fields.
  */
-function editGig(event, on=null) {
+function editGig(event, on) {
     event?.stopPropagation?.();
     event?.preventDefault?.();
-    jQuery(".giglist").toggleClass("editing", on);
+    gigwp(".giglist").classList.toggle("editing", on);
     setFieldsEditable();
 }
 function setFieldsEditable() {
-    if (jQuery(".giglist").hasClass("editing")) {
-        jQuery("div.gig-field").attr("contentEditable", true);
-        jQuery("input.gig-field").attr("disabled", false);
-        jQuery("#editButton").text("Done");
+    if (gigwp(".giglist").classList.contains("editing")) {
+        gigwpa("div.gig-field").forEach(div => div.contentEditable = true);
+        gigwpa("input.gig-field").forEach(div => div.disabled = false);
+        gigwp("#editButton").innerText = ("Done");
     } else {
-        jQuery(".gig-field").attr("contentEditable", false);
-        jQuery("input.gig-field").attr("disabled", true);
-        jQuery("#editButton").text("Edit");
+        gigwpa(".gig-field").forEach(div => div.contentEditable = false);
+        gigwpa("input.gig-field").forEach(div => div.disabled = true);
+        gigwp("#editButton").innerText = ("Edit");
     }
 }
 
@@ -107,7 +111,7 @@ function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
                 insertGig(confirmedPost);
                 threadFlag(-1, () => {
                     jQuery('html, body').animate({
-                        scrollTop: jQuery("#gig-top").offset().top
+                        scrollTop: jQuery("gigwp-capsule").offset().top
                     }, 2000);
                     editGig(null, true);
                 });
@@ -138,13 +142,13 @@ var threads = 0;
 
 function threadFlag(count, f) {
     threads += count;
-    const flag = jQuery(".giglist");
+    const flag = gigwp(".giglist");
     if (threads > 0) {
-        flag.addClass("edit-in-progress");
+        flag.classList.add("edit-in-progress");
         // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
         window.addEventListener("beforeunload", beforeUnloadHandler);
     } else {
-        flag.removeClass("edit-in-progress");
+        flag.classList.remove("edit-in-progress");
         window.removeEventListener("beforeunload", beforeUnloadHandler);
         if (f) f();
     }
@@ -247,33 +251,32 @@ function readDates(s) {
     return [dg1, dg2, c[7].trim()];
 }
 
-function getGigData(gigElement) {
-    if (!jQuery(".giglist").hasClass("editing")) return false;
-    const gig = jQuery(gigElement);
-    const postid = gig.attr("data-id");
-    const titleDiv = gig.find(".gig-title");
-    let title = titleDiv.text();
+function getGigData(gig) {
+    if (!gigwp(".giglist").classList.contains("editing")) return false;
+    const postid = gig.attributes["data-id"]?.value;
+    const titleDiv = gig.querySelector(".gig-title");
+    let title = titleDiv.innerText;
     // sanitize
-    title = titleDiv.text(title).html();
-    let dtinfoDiv = gig.find(".gig-dtinfo");
-    let dtinfo = dtinfoDiv.val().replaceAll('&', "&amp;").replaceAll('<', "&lt;").replaceAll('>', '&gt;');
-    let gigPic = gig.find(".gigpic").attr("src");
-    const dtstart = gig.find(".gig-dtstart").val();
-    const dtend = gig.find(".gig-dtend").val();
+    titleDiv.innerText = title;
+    title = titleDiv.innerHTML;
+    let dtinfo = inputValue(gig, ".gig-dtinfo").replaceAll('&', "&amp;").replaceAll('<', "&lt;").replaceAll('>', '&gt;');
+    let gigPic = gig.querySelector(".gigpic").attributes["src"]?.value || "";
+    const dtstart = inputValue(gig, ".gig-dtstart");
+    const dtend = inputValue(gig, ".gig-dtend");
 
-    let recursday = gig.find(".gig-recursday").val();
+    let recursday = inputValue(gig, ".gig-recursday");
 
     let recursweeks = "";
-    gig.find(".gig-recursweek input").toArray().forEach((cb) => {
+    gig.querySelectorAll(".gig-recursweek input").forEach((cb) => {
         if (cb.checked) {
             let id = cb.id.substr(-1);
             recursweeks += id;
         }
     });
-    let venue = gig.find(".gig-venue").val();
-    let booklabel = gig.find(".gig-booklabel").val();
-    let bookinglink = gig.find(".gig-bookinglink").val();
-    let locallink = gig.find(".gig-local-link").prop("checked");
+    let venue = inputValue(gig, ".gig-venue");
+    let booklabel = inputValue(gig, ".gig-booklabel");
+    let bookinglink = inputValue(gig, ".gig-bookinglink");
+    let locallink = gig.querySelector(".gig-local-link")?.checked;
 
     return {
         id: postid,
@@ -312,107 +315,119 @@ function dateString(d) {
     date.toISOString().substring(0, 10);
 }
 
-function setHandlers(jqGig) {
-    jqGig.on("focusout", function (e, a) {
-        // https://learn.wordpress.org/tutorial/interacting-with-the-wordpress-rest-api/
-        if (!jQuery(".giglist").hasClass("editing")) return;
-        this.focussed = setTimeout(() => {
-            // Do this when it's clear we're not just 
-            // hopping to another field in same gig
-            const data = getGigData(this);
-            if (data && this.savedData != JSON.stringify(data)) {
-                validate(data, this.savedData ? JSON.parse(this.savedData) : "");
-                //console.log("change " + JSON.stringify(data));
-                const post = new wp.api.models.Post(data);
-                threadFlag(1);
-                post.save().done(post => { // ?? doesn't work with await?
-                    threadFlag(-1);
-                    refreshGig(jQuery(this), data);
-                });
+function parentOfClass(e, ofClass) {
+    if (!e) return null;
+    if (e.classList.contains(ofClass)) return e;
+    return parentOfClass(e.parentElement, ofClass);
+}
+
+/**
+ * Set event listeners for one or many 
+ * @param {array|Gig} gigs 
+ */
+function setHandlers(gigs) {
+    (gigs.forEach ? gigs : [gigs]).forEach(gig => {
+        gig.addEventListener("focusout", function (e) {
+            // https://learn.wordpress.org/tutorial/interacting-with-the-wordpress-rest-api/
+            if (!gigwp(".giglist").classList.contains("editing")) return;
+            gig.focussed = setTimeout(() => {
+                // Do this when it's clear we're not just 
+                // hopping to another field in same gig
+                const data = getGigData(gig);
+                if (data && gig.savedData != JSON.stringify(data)) {
+                    validate(data, gig.savedData ? JSON.parse(gig.savedData) : "");
+                    //console.log("change " + JSON.stringify(data));
+                    const post = new wp.api.models.Post(data);
+                    threadFlag(1);
+                    post.save().done(post => { // ?? doesn't work with await?
+                        threadFlag(-1);
+                        refreshGig(gig, data);
+                    });
+                }
+            }, 100);
+        });
+
+        gig.addEventListener("focusin", function (e, a) {
+            if (gig.focussed) {
+                // Just been in another field in same gig
+                clearTimeout(gig.focussed);
+                gig.focussed = null;
             }
-        }, 100);
-    });
-
-    jqGig.on("focusin", function (e, a) {
-        if (this.focussed) {
-            // Just been in another field in same gig
-            clearTimeout(this.focussed);
-            this.focussed = null;
-        }
-        this.savedData = JSON.stringify(getGigData(this));
-    });
+            gig.savedData = JSON.stringify(getGigData(gig));
+        });
 
 
-    gigUpdateHandlers.forEach(f => f(jqGig));
+        gigUpdateHandlers.forEach(f => f(gig));
+    })
+}
+/**
+ * Current value of an <input>
+ * @param {*} gigElement 
+ * @param {*} inputFieldSelector 
+ * @returns 
+ */
+function inputValue(gigElement, inputFieldSelector) {
+    return gigElement.querySelector(inputFieldSelector)?.value || "";
 }
 
 /**
  * Make the end date look less significant if it's the same as start date
- * @param {jQuery} jqGig 
+ * @param {Element|Array(Element)} gig
  */
-
-function setEndDateColour(jqGig) {
-    jqGig.each((i, g) => {
-        const jqg = jQuery(g);
-        let dtstart = jqg.find("input.gig-dtstart").val();
-        let dtend = jqg.find("input.gig-dtend").val();
-        let jqrecursday = jqg.find(".gig-recursday");
-        let recursdayValue = 1 * jqrecursday.val() || 0;
-        jqg.toggleClass("onedate", dtstart == dtend);
-        jqg.toggleClass("recurs", !!recursdayValue);
-        let rweekscount = jqg.find(".gig-recursweek input:checked").length;
+function setGigFormColours(g) {
+        let dtstart = inputValue(g, "input.gig-dtstart");
+        let dtend = inputValue(g, "input.gig-dtend");
+        let recursday = inputValue(g, ".gig-recursday");
+        let recursdayValue = 1 * recursday || 0;
+        g.classList.toggle("onedate", dtstart == dtend);
+        g.classList.toggle("recurs", !!recursdayValue);
+        let rweekscount = g.querySelectorAll(".gig-recursweek input:checked").length;
 
         if (recursdayValue == 0 && rweekscount > 0) {
-            jqrecursday.val(new Date(dtstart).getDay());
+            g.querySelector(".gig-recursday").value = new Date(dtstart).getDay();
         }
 
-        let locallink = jqg.find(".gig-local-link").prop("checked");
-        console.log("Locallink:" + locallink);
-        jqg.toggleClass("locallink", !!locallink);
+        let locallink = g.querySelector(".gig-local-link").checked;
+        g.classList.toggle("locallink", !!locallink);
+};
 
-    })
-}
-
-gigUpdateHandlers.push(jqGig => {
+gigUpdateHandlers.push(gig => {
     // Update end date with start date unless they're different
-    jqGig.on("input", ".gig-dtstart", function (e, a) {
-        let gig = e.delegateTarget;
+    gig.addEventListener("input", function (e, a) {
+        if (!e.target.classList.contains("gig-dtstart")) return;
         let saved = JSON.parse(gig.savedData || "");
-        let dtend = jQuery(gig).find(".gig-dtend");
+        let dtend = gig.querySelector(".gig-dtend");
         if (saved && saved.meta.dtend == saved.meta.dtstart ||
-            dtend.val().localeCompare(e.target.value) < 0
+            dtend.value.localeCompare(e.target.value) < 0
         ) {
-            dtend.val(e.target.value);
+            dtend.value = e.target.value;
         }
-        setEndDateColour(jQuery(gig));
+        setGigFormColours(gig);
     });
 
 
-    jqGig.on("input", ".gig-dtend", function (e, a) {
-        setEndDateColour(jQuery(e.delegateTarget));
+    gig.addEventListener("input", function (e, a) {
+        if (!e.target.classList.contains("gig-dtend")) return;
+        setGigFormColours(gig);
     });
 
 })
 
-gigUpdateHandlers.push(jqGig => {
-    jqGig.each((i, g) => setEndDateColour(jQuery(g)));
-})
+
+gigUpdateHandlers.push(gig => setGigFormColours(gig));
 
 
-gigUpdateHandlers.push(jqGigs => {
-    jqGigs.on("input", ".gig-recursday", function (e) {
-        const jqGig = jQuery(e.delegateTarget);
-        if (1 * e.target.value) {
-            jqGig.find(".gig-recursweek input[type='checkbox']").each((i, cb) => jQuery(cb).prop("checked", true));
-        } else {
-            jqGig.find(".gig-recursweek input[type='checkbox']").each((i, cb) => jQuery(cb).prop("checked", false));
+gigUpdateHandlers.push(gig =>
+    gig.addEventListener("input", function (e) {
+        if (e.target.classList.contains("gig-recursday")) {
+            if (1 * e.target.value) {
+                gig.querySelectorAll(".gig-recursweek input[type='checkbox']").forEach((cb => cb.checked = true));
+            } else {
+                gig.querySelectorAll(".gig-recursweek input[type='checkbox']").forEach((cb => cb.checked = false));
+            }
         }
-        setEndDateColour(jQuery(e.delegateTarget));
-    })
-    jqGigs.on("input", "input[type=checkbox]", function (e) {
-        setEndDateColour(jQuery(e.delegateTarget));
-    })
-})
+        setGigFormColours(gig);
+    }));
 
 function gigTemplateEditingMap(post, map) {
     let gigdayoptions = ["-", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
@@ -439,13 +454,13 @@ function gigTemplateEditingMap(post, map) {
 }
 
 function deleteGig(id) {
-    let gig = jQuery(`.gig[data-id="${id}"]`);
-    let title = gig.find(".gig-title").text();
+    let gig = gigwp(`.gig[data-id="${id}"]`);
+    let title = gig.gigwp(".gig-title").innerText;
     if (confirm(`Delete event "${title}" ?`)) {
         const post = new wp.api.models.Post({ id: id });
         threadFlag(1);
         post.destroy().done(function (post) {
-            jQuery(`.gig[data-id="${id}"]`).remove();
+            gigwp(`.gig[data-id="${id}"]`).remove();
             threadFlag(-1);
         })
     }
