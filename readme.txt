@@ -1,3 +1,17 @@
+=== Plugin Name ===
+Contributors: alancameronwills
+Tags: events
+Requires at least: 4.7
+Tested up to: 6.8.1
+Stable tag: 4.3
+Requires PHP: 7.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
+
+== Description ==
+
 # Gigiau Event Poster Page
 Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
 
