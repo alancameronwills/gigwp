@@ -6,10 +6,13 @@
  * @wordpress-plugin
  * 
  * Plugin Name: Gigiau Events Posters
+ * Plugin URI: https://gigiau.uk/gigwp.zip
  * Description: Events listings based on posters. 
  * Author: Alan Cameron Wills
+ * Developer: Alan Cameron Wills
+ * Developer URI: https://gigiau.uk
  * Version: 1.4
- * TODO: srcset; !scrunched editing prompts; upload - show progress; nth week, unmonthed
+ * TODO: srcset; upload - show progress; nth week, unmonthed
  */
 
 /*

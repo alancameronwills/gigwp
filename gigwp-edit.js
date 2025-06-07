@@ -327,36 +327,6 @@ function parentOfClass(e, ofClass) {
  */
 function setHandlers(gigs) {
     (gigs.forEach ? gigs : [gigs]).forEach(gig => {
-        gig.addEventListener("focusout", function (e) {
-            // https://learn.wordpress.org/tutorial/interacting-with-the-wordpress-rest-api/
-            if (!gigwp(".giglist").classList.contains("editing")) return;
-            gig.focussed = setTimeout(() => {
-                // Do this when it's clear we're not just 
-                // hopping to another field in same gig
-                const data = getGigData(gig);
-                if (data && gig.savedData != JSON.stringify(data)) {
-                    validate(data, gig.savedData ? JSON.parse(gig.savedData) : "");
-                    //console.log("change " + JSON.stringify(data));
-                    const post = new wp.api.models.Post(data);
-                    threadFlag(1);
-                    post.save().done(post => { // ?? doesn't work with await?
-                        threadFlag(-1);
-                        refreshGig(gig, data);
-                    });
-                }
-            }, 100);
-        });
-
-        gig.addEventListener("focusin", function (e, a) {
-            if (gig.focussed) {
-                // Just been in another field in same gig
-                clearTimeout(gig.focussed);
-                gig.focussed = null;
-            }
-            gig.savedData = JSON.stringify(getGigData(gig));
-        });
-
-
         gigUpdateHandlers.forEach(f => f(gig));
     })
 }
@@ -375,60 +345,86 @@ function inputValue(gigElement, inputFieldSelector) {
  * @param {Element|Array(Element)} gig
  */
 function setGigFormColours(g) {
-        let dtstart = inputValue(g, "input.gig-dtstart");
-        let dtend = inputValue(g, "input.gig-dtend");
-        let recursday = inputValue(g, ".gig-recursday");
-        let recursdayValue = 1 * recursday || 0;
-        g.classList.toggle("onedate", dtstart == dtend);
-        g.classList.toggle("recurs", !!recursdayValue);
-        let rweekscount = g.querySelectorAll(".gig-recursweek input:checked").length;
+    let dtstart = inputValue(g, "input.gig-dtstart");
+    let dtend = inputValue(g, "input.gig-dtend");
+    let recursday = inputValue(g, ".gig-recursday");
+    let recursdayValue = 1 * recursday || 0;
+    g.classList.toggle("onedate", dtstart == dtend);
+    g.classList.toggle("recurs", !!recursdayValue);
+    let rweekscount = g.querySelectorAll(".gig-recursweek input:checked").length;
 
-        if (recursdayValue == 0 && rweekscount > 0) {
-            g.querySelector(".gig-recursday").value = new Date(dtstart).getDay();
-        }
+    if (recursdayValue == 0 && rweekscount > 0) {
+        g.querySelector(".gig-recursday").value = new Date(dtstart).getDay();
+    }
 
-        let locallink = g.querySelector(".gig-local-link").checked;
-        g.classList.toggle("locallink", !!locallink);
+    let locallink = g.querySelector(".gig-local-link").checked;
+    g.classList.toggle("locallink", !!locallink);
 };
 
 gigUpdateHandlers.push(gig => {
     // Update end date with start date unless they're different
-    gig.addEventListener("input", function (e, a) {
-        if (!e.target.classList.contains("gig-dtstart")) return;
-        let saved = JSON.parse(gig.savedData || "");
-        let dtend = gig.querySelector(".gig-dtend");
-        if (saved && saved.meta.dtend == saved.meta.dtstart ||
-            dtend.value.localeCompare(e.target.value) < 0
-        ) {
-            dtend.value = e.target.value;
-        }
-        setGigFormColours(gig);
-    });
-
-
-    gig.addEventListener("input", function (e, a) {
-        if (!e.target.classList.contains("gig-dtend")) return;
-        setGigFormColours(gig);
-    });
-
-})
-
-
-gigUpdateHandlers.push(gig => setGigFormColours(gig));
-
-
-gigUpdateHandlers.push(gig =>
     gig.addEventListener("input", function (e) {
+        if (e.target.classList.contains("gig-dtstart")) {
+            let saved = JSON.parse(gig.savedData || "");
+            let dtend = gig.querySelector(".gig-dtend");
+            if (saved && saved.meta.dtend == saved.meta.dtstart ||
+                dtend.value.localeCompare(e.target.value) < 0
+            ) {
+                dtend.value = e.target.value;
+            }
+        }
         if (e.target.classList.contains("gig-recursday")) {
             if (1 * e.target.value) {
-                gig.querySelectorAll(".gig-recursweek input[type='checkbox']").forEach((cb => cb.checked = true));
+                const weekBoxes = gig.querySelectorAll(".gig-recursweek input[type='checkbox']");
+                if (Array.from(weekBoxes).every(cb => cb.checked == false)) {
+                    weekBoxes.forEach((cb => cb.checked = true));
+                }
             } else {
                 gig.querySelectorAll(".gig-recursweek input[type='checkbox']").forEach((cb => cb.checked = false));
             }
         }
         setGigFormColours(gig);
-    }));
+    });
+    setGigFormColours(gig);
+});
 
+gigUpdateHandlers.push(gig => {
+    gig.addEventListener("focusout", function (e) {
+        // https://learn.wordpress.org/tutorial/interacting-with-the-wordpress-rest-api/
+        if (!gigwp(".giglist").classList.contains("editing")) return;
+        gig.focussed = setTimeout(() => {
+            // Do this when it's clear we're not just 
+            // hopping to another field in same gig
+            const data = getGigData(gig);
+            if (data && gig.savedData != JSON.stringify(data)) {
+                validate(data, gig.savedData ? JSON.parse(gig.savedData) : "");
+                //console.log("change " + JSON.stringify(data));
+                const post = new wp.api.models.Post(data);
+                threadFlag(1);
+                post.save().done(post => { // ?? doesn't work with await?
+                    threadFlag(-1);
+                    refreshGig(gig, data);
+                });
+            }
+        }, 100);
+    });
+
+    gig.addEventListener("focusin", function (e, a) {
+        if (gig.focussed) {
+            // Just been in another field in same gig
+            clearTimeout(gig.focussed);
+            gig.focussed = null;
+        }
+        gig.savedData = JSON.stringify(getGigData(gig));
+    });
+});
+
+
+/**
+ * Apply a map of replacements to the template HTML for a gig
+ * @param {*} post 
+ * @param {*} map 
+ */
 function gigTemplateEditingMap(post, map) {
     let gigdayoptions = ["-", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
         (day, i) =>
@@ -453,6 +449,10 @@ function gigTemplateEditingMap(post, map) {
     map["locallink"] = post.meta.locallink ? "checked" : "";
 }
 
+/**
+ * User clicked Delete on a gig
+ * @param {} id 
+ */
 function deleteGig(id) {
     let gig = gigwp(`.gig[data-id="${id}"]`);
     let title = gig.gigwp(".gig-title").innerText;
@@ -466,10 +466,15 @@ function deleteGig(id) {
     }
 }
 
+/**
+ * User chose a 'show from' date
+ * @param {Date} d 
+ */
 function setFromDate(d) {
     if (!d || d == new Date().toISOString().substring(0, 10)) {
-        window.open(".", "_this");
+        window.open(location.href.replace(/[?&]asif=[-0-9]+/,""), "_self");
     } else {
-        window.open(".?asif=" + d, "_this");
+        const c = location.href.indexOf('?') >= 0 ? '&' : '?';
+        window.open(`${location.href}${c}asif=` + d, "_self");
     }
 }
