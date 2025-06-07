@@ -455,7 +455,7 @@ function gigTemplateEditingMap(post, map) {
  */
 function deleteGig(id) {
     let gig = gigwp(`.gig[data-id="${id}"]`);
-    let title = gig.gigwp(".gig-title").innerText;
+    let title = gig.querySelector(".gig-title").innerText;
     if (confirm(`Delete event "${title}" ?`)) {
         const post = new wp.api.models.Post({ id: id });
         threadFlag(1);
