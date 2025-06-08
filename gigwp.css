@@ -1,6 +1,6 @@
 
 
-img.expand-image {
+.giglist>.gigs>.gig img.gigpic.expand-image {
     width:100vw;
     height: 100vh;
     max-width:100vw;
@@ -36,7 +36,6 @@ img.expand-image {
     margin: 0 -20px;
 }
 
-
 .giglist>.gigs {
     display: flex;
     flex-wrap: wrap;
@@ -46,6 +45,34 @@ img.expand-image {
     padding: 10px;
     color: black;
 }
+
+.gigpic {
+    width: var(--pic-width);
+}
+.gig>div {
+    width: var(--pic-width);
+    object-fit: contain;
+}
+
+.giglist.align-bottom {
+    &>.gigs {align-items:flex-end;}
+    .gigpic {height:auto;}
+}
+.giglist.align-top {
+   &>.gigs { align-items:flex-start; }
+  .gigpic{height:auto}
+}
+.giglist.align-base {
+   &>.gigs{align-items:baseline;}
+  .gigpic{height:auto}
+}
+.giglist.align-stretch {
+   .gigpic{
+         object-fit:cover;
+         height: var(--pic-height);
+   }
+}
+
 
 .giglist .controls {
     text-align: right;

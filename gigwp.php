@@ -79,7 +79,8 @@ function gigwp_events_list_shortcode($attributes = [])
             'category' => GIGWP_CATEGORY,
             'popImages' => true, // expand image on user click
             'venue' => "",
-            'book' => "Book Tickets"
+            'book' => "Book Tickets",
+            'align' => "top" //bottom | top | stretch | base 
         ],
         $attributes
     ));
@@ -98,13 +99,15 @@ function gigwp_events_list_shortcode($attributes = [])
         $fromDate = date('Y-m-d');
     }
 
+    if (!preg_match("/^[-a-z]+$/",$align)) $align="top";
 
-    return gigwp_gig_list($fromDate, $category, $width, $height, $popImages, $layout, $_GET['json'] ?? false, $venue, $book);
+
+    return gigwp_gig_list($fromDate, $category, $width, $height, $align, $popImages, $layout, $_GET['json'] ?? false, $venue, $book);
 }
 
 
 
-function gigwp_gig_list($fromDate, $category, $width, $height, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel)
+function gigwp_gig_list($fromDate, $category, $width, $height, $align, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel)
 {
     $postDated = gigwp_get_gigs_with_recurs($fromDate, $category);
     if ($json == 2) {
@@ -118,7 +121,7 @@ function gigwp_gig_list($fromDate, $category, $width, $height, $popImages, $layo
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
-    return gigwp_gig_show($gigs, $width, $height, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel);
+    return gigwp_gig_show($gigs, $width, $height, $align, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel);
 }
 
 function gigwp_get_gigs_with_recurs($fromDate, $category)
@@ -418,9 +421,10 @@ function gigwp_gig_template($isSignedIn, $layout = "venue image title dates", $d
  * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigwp_gig_show($gigs, $width, $height, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel)
+function gigwp_gig_show($gigs, $width, $height, $align, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel)
 {
     global $gigwp_category_id;
+    $alignClass = "align-$align";
     ob_start();
     // The JSON list of gigs is uploaded inline
     // The HTML template for each gig is also inline
@@ -452,16 +456,11 @@ function gigwp_gig_show($gigs, $width, $height, $category, $popImages, $layout, 
     </script>
     <gigwp-capsule>
         <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigwp.css" > 
-        <div id="giglist" class="giglist">
+        <div id="giglist" class="giglist <?=$alignClass?>">
             <style>
-                .gig>div {
-                    width: <?= $width ?>px;
-                }
-
-                .gigpic {
-                    width: <?= $width ?>px;
-                    height: <?= $height ?>px;
-                    object-fit: contain;
+                #giglist {
+                    --pic-width:<?= $width ?>px;
+                    --pic-height:<?= $height ?>px;
                 }
             </style>
             <?php if (current_user_can('edit_others_pages')) {  ?>
