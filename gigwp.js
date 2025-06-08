@@ -40,8 +40,12 @@ function fillGigList(gigListJson) {
  * @returns HTML string
  */
 function gigHtml(post) {
-
-    let imgLink = post.thumbnail_image || post.pic || "/?p=" + post.featured_media;
+    const title = (post.title?.rendered || post.title).replaceAll(/</g, "&lt;");
+    const imgLink = post.thumbnail_image || post.pic || "/?p=" + post.featured_media;
+	const imgElement = `<div class="gigpic" style="position:relative;padding:0;">
+		<img src="${post.smallpic}"  title="poster: ${title}"/>
+		<img class="full" src="${post.pic}" title="poster: ${title}"/>
+		</div>`;
     let gigdates = friendlyDate(post.meta.dtstart) +
         (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
     if (post.meta.recursday && post.meta.recursweeks) {
@@ -67,8 +71,9 @@ function gigHtml(post) {
     let template = jQuery("#gigtemplate").html();
     let maps = {
         "gigid": post.id,
-        "gigtitle": post.title?.rendered || post.title,
+        "gigtitle": title,
         "gigpic": imgLink,
+        "gigimg" : imgElement,
         "gigdates": gigdates,
         "gigdtinfo": post.meta?.dtinfo || "",
         "bookbutton": bookbutton,

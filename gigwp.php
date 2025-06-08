@@ -192,7 +192,6 @@ function gigwp_get_gigs($fromDate, $category, $postIds = [])
         ];
     }
 
-
     $gigs = [];
     $query = new WP_QUERY($qExpr);
     while ($query->have_Posts()):
@@ -203,6 +202,7 @@ function gigwp_get_gigs($fromDate, $category, $postIds = [])
             'link' => get_permalink(),
             'title' => get_the_title(),
             'content' => get_the_content(),
+			'smallpic' => get_the_post_thumbnail_url(null, "medium"),
             'pic' => get_the_post_thumbnail_url(null, "full"),
             'meta' => array_map(function ($m) {
                 return $m[0];
@@ -328,8 +328,7 @@ function gigwp_gig_template($isSignedIn, $layout = "venue image title dates", $d
                     break;
                 case "i":
                 ?>
-                    <img src="%gigpic" class="gigpic" />
-
+                    %gigimg
                 <?php
                     break;
                 case "d":

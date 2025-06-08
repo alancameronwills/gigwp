@@ -1,17 +1,3 @@
-=== Plugin Name ===
-Contributors: alancameronwills
-Tags: events
-Requires at least: 4.7
-Tested up to: 6.8.1
-Stable tag: 4.3
-Requires PHP: 7.0
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-
-Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
-
-== Description ==
-
 # Gigiau Event Poster Page
 Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
 
@@ -70,18 +56,13 @@ Set the Booking Label to be "Book Tickets" or "Read more".
 
 There are some options you can set in the `[gigiau]` shortcode. Click WordPress **Edit Page** to adjust them. For example:
 ```
-    [gigiau layout="title image dates venue" width="320" align="stretch" ]
+    [gigiau layout="title image dates venue" width="320" ]
 ```
 
 * `layout="image booking title dates venue"` - Re-order the words to change the layout of each event
 * `width="340"` - in pixels of each event. Scales down automatically for narrow screens such as phones.
 * `height="420"` - in pixels. Posters are padded with empty space to that height. Set to 0 to prevent padding. Leave it out altogether if you have A4 posters, 1.412 x width.
 * `border="false"` - to prevent a border round posters
-* `align="cover"` - 
-  * `cover`= items a uniform size, but edges lost
-  * `top` = items may be different sizes, no loss of edges, aligned at top 
-  * `bottom` = aligned at bottom of item including text
-  * `base` = aligned at bottom of poster
 * `background="whitesmoke"` - a colour, such as `lightgray, gray, white, aliceblue, black, blue, ...` or `#CCFFAA`
 * `book="More info"` - The default label of the link button, such as "Book tickets". You can change it per event.
 
