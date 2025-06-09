@@ -260,7 +260,7 @@ function getGigData(gig) {
     titleDiv.innerText = title;
     title = titleDiv.innerHTML;
     let dtinfo = inputValue(gig, ".gig-dtinfo").replaceAll('&', "&amp;").replaceAll('<', "&lt;").replaceAll('>', '&gt;');
-    let gigPic = gig.querySelector(".gigpic").attributes["src"]?.value || "";
+    let gigPic = gig.querySelector(".gigpic .full").attributes["src"]?.value || "";
     const dtstart = inputValue(gig, ".gig-dtstart");
     const dtend = inputValue(gig, ".gig-dtend");
 
@@ -462,6 +462,10 @@ function deleteGig(id) {
         post.destroy().done(function (post) {
             gigwp(`.gig[data-id="${id}"]`).remove();
             threadFlag(-1);
+            if (window.gigsElementsInOrder) {
+                // align-columns layout
+                window.location.reload();
+            }
         })
     }
 }

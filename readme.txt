@@ -82,6 +82,7 @@ There are some options you can set in the `[gigiau]` shortcode. Click WordPress 
   * `top` = items may be different sizes, no loss of edges, aligned at top 
   * `bottom` = aligned at bottom of item including text
   * `base` = aligned at bottom of poster
+  * `columns` = aligned by columns - date order may be difficult to follow
 * `background="whitesmoke"` - a colour, such as `lightgray, gray, white, aliceblue, black, blue, ...` or `#CCFFAA`
 * `book="More info"` - The default label of the link button, such as "Book tickets". You can change it per event.
 

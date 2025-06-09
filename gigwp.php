@@ -464,6 +464,7 @@ function gigwp_gig_show($gigs, $width, $height, $align, $category, $popImages, $
             </style>
             <?php if (current_user_can('edit_others_pages')) {  ?>
                 <script>
+                    window.gigWidth = <?= $width ?>;
                     window.gigiauCategoryId = "<?= $gigwp_category_id ?>";
                     window.gigiauCategory = "<?= $category ?>";
                     window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $DefaultBookButtonLabel) ?>";

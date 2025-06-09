@@ -1,6 +1,6 @@
 
 
-.giglist>.gigs>.gig .gigpic>img.expand-image {
+.giglist>.gigs .gig .gigpic>img.expand-image {
     width:100vw;
     height: 100vh;
     max-width:100vw;
@@ -33,7 +33,8 @@
 
 
 .giglist {
-    margin: 0 -20px;
+    margin: 0 auto;
+    max-width: 96vw;
 }
 
 .giglist>.gigs {
@@ -72,6 +73,22 @@
          height: var(--pic-height);
    }
 }
+.giglist.align-columns {
+    .gigs {
+        gap: 2%;
+    }
+    .gig>div {
+        width:100%;
+        padding: 0;
+    }
+    .gig>.gigpic>img {
+        width:100%;
+    }
+    .gig {
+        margin: 10px 0;
+    }
+}
+
 
 
 .giglist .controls {
@@ -231,7 +248,7 @@ span.recurrence {
     border-top: 1px solid lightgray;
     border-bottom: 1px solid lightgray;
 }
-.gigpic>.full {
+.gigpic>.overlay {
     position:absolute;
     top:0;
     left:0;

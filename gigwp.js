@@ -32,7 +32,38 @@ function fillGigList(gigListJson) {
     let gigListHtml = gigList.map(gig => gigHtml(gig)).join("\n");
     gigwp(".giglist>.gigs").innerHTML = gigListHtml;
     if (window?.setHandlers) setHandlers(gigwpa(".gig"));
+    if (gigwp(".giglist").classList.contains("align-columns")) {
+        window.gigsElementsInOrder = gigwpa(".gig");
+        rearrangeGigsByColumns();
+    }
 }
+
+function rearrangeGigsByColumns(event) {
+    if (!event) window.addEventListener("resize", rearrangeGigsByColumns);
+    const columnCount = Math.max(Math.floor(window.innerWidth/(window.gigWidth||340)),1);
+    let gigsTop = gigwp(".giglist>.gigs");
+    if (gigsTop.children.length == columnCount 
+        && gigsTop.children[0].classList.contains("gig-column")) {
+        return;
+    }
+    let newColumns = [];
+
+    for (let col = 0; col<columnCount; col++) {
+        let columnElement = document.createElement("div",{});
+        newColumns.push(columnElement);
+        columnElement.classList.add("gig-column");
+        columnElement.style.width=columnCount>0?Math.floor(100/columnCount -3)+"%":"100%";
+        for (let j= col; j < window.gigsElementsInOrder.length; j += columnCount) {
+            columnElement.append(window.gigsElementsInOrder[j]);
+        }
+    }
+    gigsTop.replaceChildren();
+    for(let col = 0; col<newColumns.length; col++) {
+        gigsTop.append(newColumns[col]);
+    }
+}
+
+
 
 /**
  * Map a gig object to a displayed event
@@ -42,9 +73,9 @@ function fillGigList(gigListJson) {
 function gigHtml(post) {
     const title = (post.title?.rendered || post.title).replaceAll(/</g, "&lt;");
     const imgLink = post.thumbnail_image || post.pic || "/?p=" + post.featured_media;
-	const imgElement = `<div class="gigpic" style="position:relative;padding:0;">
-		<img src="${post.smallpic}"  title="poster: ${title}"/>
-		<img class="full" src="${post.pic}" title="poster: ${title}"/>
+	const imgElement = `<div class="gigpic" style="position:relative;padding:0;">`
+        + (post.smallpic ? `<img src="${post.smallpic}"  title="poster: ${title}"/>` : "")
+		+ `<img class="full" src="${post.pic}" title="poster: ${title}"/>
 		</div>`;
     let gigdates = friendlyDate(post.meta.dtstart) +
         (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
