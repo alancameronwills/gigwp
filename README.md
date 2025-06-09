@@ -60,7 +60,13 @@ There are some options you can set in the `[gigiau]` shortcode. Click WordPress 
 ```
 
 * `layout="image booking title dates venue"` - Re-order the words to change the layout of each event
-* `width="340"` - in pixels of each event. Scales down automatically for narrow screens such as phones.
+* `align="columns"` - Layout of the list:
+  * `top` - Events are in rows with tops aligned. Gaps below short posters.
+  * `bottom` - Events are in rows with bottoms aligned. Gaps at tops.
+  * `base` - Bottoms of posters are aligned
+  * `cover` - Posters are expanded to fill a uniform space; but edges might be cut off.
+  * `columns` - Fills the space, but posters are not aligned
+* `width="340"` - Width in pixels of each poster. Scales down automatically for narrow screens such as phones.
 * `height="420"` - in pixels. Posters are padded with empty space to that height. Set to 0 to prevent padding. Leave it out altogether if you have A4 posters, 1.412 x width.
 * `border="false"` - to prevent a border round posters
 * `background="whitesmoke"` - a colour, such as `lightgray, gray, white, aliceblue, black, blue, ...` or `#CCFFAA`

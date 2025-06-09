@@ -75,7 +75,7 @@ function gigHtml(post) {
     const imgLink = post.thumbnail_image || post.pic || "/?p=" + post.featured_media;
 	const imgElement = `<div class="gigpic" style="position:relative;padding:0;">`
         + (post.smallpic ? `<img src="${post.smallpic}"  title="poster: ${title}"/>` : "")
-		+ `<img class="full" src="${post.pic}" title="poster: ${title}"/>
+		+ `<img class="full ${post.smallpic?'overlay':''}" src="${post.pic}" title="poster: ${title}"/>
 		</div>`;
     let gigdates = friendlyDate(post.meta.dtstart) +
         (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
