@@ -6,7 +6,7 @@
  * @wordpress-plugin
  * 
  * Plugin Name: Gigiau Events Posters
- * Plugin URI: https://gigiau.uk/gigwp.zip
+ * Plugin URI: https://gigiau.uk/gigio.zip
  * Description: Events listings based on posters. 
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
@@ -16,7 +16,7 @@
  */
 
 /*
- Place shortcode [gigwp ] in a page. 
+ Place shortcode [gigiau] in a page. 
 
  While signed in, open the page and click "Add" (bottom right).
  Select one or more pictures; optionally set titles and put dates & info in the caption.
@@ -36,40 +36,40 @@ require_once(ABSPATH . 'wp-includes/class-wpdb.php');
 require_once(ABSPATH . 'wp-admin/includes/taxonomy.php');
 
 
-define("GIGWP_CATEGORY", "gig");
-$gigwp_category_id;
+define("GIGIO_CATEGORY", "gig");
+$GIGIO_CATEGORY_id;
 
 // Our .js and .css files
-function gigwp_nqscripts()
+function gigio_nqscripts()
 {
     if (current_user_can('edit_others_pages')) {
-        wp_enqueue_script("gigwpeditjs", plugin_dir_url(__FILE__) . "gigwp-edit.js", ["jquery-core"]);
+        wp_enqueue_script("gigioeditjs", plugin_dir_url(__FILE__) . "gigio-edit.js", ["jquery-core"]);
     }
-    wp_enqueue_script("gigwpjs", plugin_dir_url(__FILE__) . 'gigwp.js', ["jquery-core"]);
-    //wp_enqueue_style("gigwpcss", plugin_dir_url(__FILE__) . 'gigwp.css');
+    wp_enqueue_script("gigiojs", plugin_dir_url(__FILE__) . 'gigio.js', ["jquery-core"]);
+    //wp_enqueue_style("gigiocss", plugin_dir_url(__FILE__) . 'gigio.css');
 }
-add_action('wp_enqueue_scripts', 'gigwp_nqscripts');
+add_action('wp_enqueue_scripts', 'gigio_nqscripts');
 
 
 add_action('wp_enqueue_scripts', function ($hook_suffix) {
     wp_enqueue_media();
 });
 
-function gigwp_install() {}
-function gigwp_deactivate() {}
-function gigwp_uninstall() {}
-register_activation_hook(__FILE__, 'gigwp_install');
-register_deactivation_hook(__FILE__, 'gigwp_deactivate');
-register_uninstall_hook(__FILE__, 'gigwp_uninstall');
+function gigio_install() {}
+function gigio_deactivate() {}
+function gigio_uninstall() {}
+register_activation_hook(__FILE__, 'gigio_install');
+register_deactivation_hook(__FILE__, 'gigio_deactivate');
+register_uninstall_hook(__FILE__, 'gigio_uninstall');
 
 
 // ******* Shortcode **********
 
-add_shortcode("gigiau", "gigwp_events_list_shortcode");
+add_shortcode("gigiau", "gigio_events_list_shortcode");
 
-function gigwp_events_list_shortcode($attributes = [])
+function gigio_events_list_shortcode($attributes = [])
 {
-    global $gigwp_category_id;
+    global $GIGIO_CATEGORY_id;
 
     extract(shortcode_atts(
         [
@@ -77,7 +77,7 @@ function gigwp_events_list_shortcode($attributes = [])
             'width' => 340,  // px width of images,
             'height' => 0,   // px height of images - defaults to sqrt(2)*width
             'asIfDate' => null, // Display from this date - can also use ?asif=YYYY-MM-DD
-            'category' => GIGWP_CATEGORY,
+            'category' => GIGIO_CATEGORY,
             'popImages' => true, // expand image on user click
             'venue' => "",
             'book' => "Book Tickets",
@@ -87,10 +87,10 @@ function gigwp_events_list_shortcode($attributes = [])
         $attributes
     ));
 
-    $category_valid = validate_param($category, "/^[a-z]+$/", GIGWP_CATEGORY);
+    $category_valid = validate_param($category, "/^[a-z]+$/", GIGIO_CATEGORY);
 
     // If this is first time:
-    $gigwp_category_id = wp_create_category($category_valid);
+    $GIGIO_CATEGORY_id = wp_create_category($category_valid);
 
     if ($width <= 30 || $width > 1000) {
         $width = 340;
@@ -103,15 +103,15 @@ function gigwp_events_list_shortcode($attributes = [])
     $layout_valid = validate_param($layout, "/[a-z ]{3,40}/", "image title dates venue");
     $background_valid = validate_param($background, "/^#[0-9a-fA-F]{6,8}$|^[-a-z]+$|^[a-z]+?\([0-9,]+\)$/", "whitesmoke");
     $from_date_valid = validate_param($_GET['asif'] ?? $asIfDate, "/^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/", date('Y-m-d'));
-    $align_valid = validate_param($_GET['align'] ?? get_option("gigwpalignment",  $align), "/[-a-z]{1,20}/", "base");
+    $align_valid = validate_param($_GET['align'] ?? get_option("gigioalignment",  $align), "/[-a-z]{1,20}/", "base");
     if (current_user_can('edit_others_pages')) {
         if ($_GET['align']??false) {
-            update_option("gigwpalignment", $align_valid);
+            update_option("gigioalignment", $align_valid);
         }
     }
     
 
-    return gigwp_gig_list($from_date_valid, $category_valid, $width, $height, $align_valid, $background_valid, $popImages, $layout_valid, $_GET['json'] ?? false, $venue, $book);
+    return gigio_gig_list($from_date_valid, $category_valid, $width, $height, $align_valid, $background_valid, $popImages, $layout_valid, $_GET['json'] ?? false, $venue, $book);
 }
 
 function validate_param($param, $pattern, $default)
@@ -126,24 +126,24 @@ function validate_param($param, $pattern, $default)
 
 
 
-function gigwp_gig_list($fromDate, $category, $width, $height, $align, $background, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel)
+function gigio_gig_list($fromDate, $category, $width, $height, $align, $background, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel)
 {
-    $postDated = gigwp_get_gigs_with_recurs($fromDate, $category);
+    $postDated = gigio_get_gigs_with_recurs($fromDate, $category);
     if ($json == 2) {
         return "<pre id='gigiau'>\n" . json_encode($postDated, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
     $postIds = array_map(function ($item) {
         return $item->ID;
     }, $postDated);
-    $gigs = gigwp_get_gigs($fromDate, $category, $postIds);
+    $gigs = gigio_get_gigs($fromDate, $category, $postIds);
     if ($json) {
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
-    return gigwp_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel);
+    return gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel);
 }
 
-function gigwp_get_gigs_with_recurs($fromDate, $category)
+function gigio_get_gigs_with_recurs($fromDate, $category)
 {
     global $wpdb;
     // dtend > now || recursday > 0 && dtend = dtstart
@@ -179,7 +179,7 @@ function gigwp_get_gigs_with_recurs($fromDate, $category)
  * @param (string) $category of Post used for gigs
  * 
  */
-function gigwp_get_gigs($fromDate, $category, $postIds = [])
+function gigio_get_gigs($fromDate, $category, $postIds = [])
 {
     // https://developer.wordpress.org/reference/classes/WP_Query/parse_query/
 
@@ -238,7 +238,7 @@ function gigwp_get_gigs($fromDate, $category, $postIds = [])
         $gm = &$gigs[$i]['meta']; // Must be reference, else we are writing to a copy
         if (strcmp($gm['dtstart'], $fromDate) < 0 && $gm['recursday']) {
             // Recurrence - set the start date
-            $nextDate = gigwp_nthDayOfMonth($gm['recursday'], $gm['recursweeks'], new DateTime($fromDate));
+            $nextDate = gigio_nthDayOfMonth($gm['recursday'], $gm['recursweeks'], new DateTime($fromDate));
             $nextDateString = date_format($nextDate, 'Y-m-d');
             $gm['dtsince'] = $gm['dtstart']; // keep old start date
             if ($gm['dtstart'] == $gm['dtend']) {
@@ -255,7 +255,7 @@ function gigwp_get_gigs($fromDate, $category, $postIds = [])
     return $gigs;
 }
 
-function gigwp_nthDayOfMonth($dayOfWeek, $weeksInMonth, $today)
+function gigio_nthDayOfMonth($dayOfWeek, $weeksInMonth, $today)
 {
     if (!$today) {
         $today = new DateTime('NOW');
@@ -316,7 +316,7 @@ function gigwp_nthDayOfMonth($dayOfWeek, $weeksInMonth, $today)
 }
 
 
-function gigwp_fdate($dt)
+function gigio_fdate($dt)
 {
     return date_format(date_create($dt), "D jS M Y");
 }
@@ -327,7 +327,7 @@ function gigwp_fdate($dt)
  * @param(string) $layout Order of presentation of "title image dates" per gig
  * 
  */
-function gigwp_gig_template($isSignedIn, $layout = "venue image title dates", $defaultVenue = "")
+function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $defaultVenue = "")
 {
     ob_start();
 ?>
@@ -439,9 +439,9 @@ function gigwp_gig_template($isSignedIn, $layout = "venue image title dates", $d
  * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigwp_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel)
+function gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel)
 {
-    global $gigwp_category_id;
+    global $GIGIO_CATEGORY_id;
     $alignClass = "align-$align";
     ob_start();
     // The JSON list of gigs is uploaded inline
@@ -452,10 +452,10 @@ function gigwp_gig_show($gigs, $width, $height, $align, $background, $category, 
         <?= json_encode($gigs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK); ?>
     </script>
     <script id="gigtemplate" type="text/html">
-        <?= gigwp_gig_template(current_user_can('edit_others_pages'), $layout, $defaultVenue) ?>
+        <?= gigio_gig_template(current_user_can('edit_others_pages'), $layout, $defaultVenue) ?>
     </script>
     <script>
-        customElements.define("gigwp-capsule", class extends HTMLElement {
+        customElements.define("gigio-capsule", class extends HTMLElement {
             constructor() {
                 super();
                 this.attachShadow({
@@ -472,8 +472,8 @@ function gigwp_gig_show($gigs, $width, $height, $align, $background, $category, 
             }
         });
     </script>
-    <gigwp-capsule>
-        <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigwp.css">
+    <gigio-capsule>
+        <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigio.css">
         <div id="giglist" class="giglist <?= $alignClass ?>">
             <style>
                 #giglist {
@@ -485,7 +485,7 @@ function gigwp_gig_show($gigs, $width, $height, $align, $background, $category, 
             <?php if (current_user_can('edit_others_pages')) {  ?>
                 <script>
                     window.gigWidth = <?= $width ?>;
-                    window.gigiauCategoryId = "<?= $gigwp_category_id ?>";
+                    window.gigiauCategoryId = "<?= $GIGIO_CATEGORY_id ?>";
                     window.gigiauCategory = "<?= $category ?>";
                     window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $DefaultBookButtonLabel) ?>";
                 </script>
@@ -514,22 +514,22 @@ function gigwp_gig_show($gigs, $width, $height, $align, $background, $category, 
 
             </div>
         </div>
-    </gigwp-capsule>
+    </gigio-capsule>
     <script>
-        function gigwp(selector) {
-            return selector ? window.gigwpCapsuleRoot.querySelector(selector) : window.gigwpCapsuleRoot;
+        function gigio(selector) {
+            return selector ? window.gigioCapsuleRoot.querySelector(selector) : window.gigioCapsuleRoot;
         }
 
-        function gigwpa(selector) {
-            return window.gigwpCapsuleRoot.querySelectorAll(selector);
+        function gigioa(selector) {
+            return window.gigioCapsuleRoot.querySelectorAll(selector);
         }
         jQuery(() => {
-            window.gigwpCapsuleRoot = document.querySelector("gigwp-capsule").createShadow();
+            window.gigioCapsuleRoot = document.querySelector("gigio-capsule").createShadow();
             fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html());
             <?php
             if ($popImages) {
             ?>
-                gigwpExpandImages();
+                gigioExpandImages();
             <?php
             }
             ?>
