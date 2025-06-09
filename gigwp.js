@@ -36,29 +36,31 @@ function fillGigList(gigListJson) {
         window.gigsElementsInOrder = gigwpa(".gig");
         rearrangeGigsByColumns();
     }
+
+    window.scrollTo(0, 0);
 }
 
 function rearrangeGigsByColumns(event) {
     if (!event) window.addEventListener("resize", rearrangeGigsByColumns);
-    const columnCount = Math.max(Math.floor(window.innerWidth/(window.gigWidth||340)),1);
+    const columnCount = Math.max(Math.floor(window.innerWidth / (window.gigWidth || 340)), 1);
     let gigsTop = gigwp(".giglist>.gigs");
-    if (gigsTop.children.length == columnCount 
+    if (gigsTop.children.length == columnCount
         && gigsTop.children[0].classList.contains("gig-column")) {
         return;
     }
     let newColumns = [];
 
-    for (let col = 0; col<columnCount; col++) {
-        let columnElement = document.createElement("div",{});
+    for (let col = 0; col < columnCount; col++) {
+        let columnElement = document.createElement("div", {});
         newColumns.push(columnElement);
         columnElement.classList.add("gig-column");
-        columnElement.style.width=columnCount>0?Math.floor(100/columnCount -3)+"%":"100%";
-        for (let j= col; j < window.gigsElementsInOrder.length; j += columnCount) {
+        columnElement.style.width = columnCount > 0 ? Math.floor(100 / columnCount - 3) + "%" : "100%";
+        for (let j = col; j < window.gigsElementsInOrder.length; j += columnCount) {
             columnElement.append(window.gigsElementsInOrder[j]);
         }
     }
     gigsTop.replaceChildren();
-    for(let col = 0; col<newColumns.length; col++) {
+    for (let col = 0; col < newColumns.length; col++) {
         gigsTop.append(newColumns[col]);
     }
 }
@@ -73,9 +75,9 @@ function rearrangeGigsByColumns(event) {
 function gigHtml(post) {
     const title = (post.title?.rendered || post.title).replaceAll(/</g, "&lt;");
     const imgLink = post.thumbnail_image || post.pic || "/?p=" + post.featured_media;
-	const imgElement = `<div class="gigpic" style="position:relative;padding:0;">`
+    const imgElement = `<div class="gigpic" style="position:relative;padding:0;">`
         + (post.smallpic ? `<img src="${post.smallpic}"  title="poster: ${title}"/>` : "")
-		+ `<img class="full ${post.smallpic?'overlay':''}" src="${post.pic}" title="poster: ${title}"/>
+        + `<img class="full ${post.smallpic ? 'overlay' : ''}" src="${post.pic}" title="poster: ${title}"/>
 		</div>`;
     let gigdates = friendlyDate(post.meta.dtstart) +
         (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
@@ -104,7 +106,7 @@ function gigHtml(post) {
         "gigid": post.id,
         "gigtitle": title,
         "gigpic": imgLink,
-        "gigimg" : imgElement,
+        "gigimg": imgElement,
         "gigdates": gigdates,
         "gigdtinfo": post.meta?.dtinfo || "",
         "bookbutton": bookbutton,

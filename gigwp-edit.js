@@ -475,11 +475,12 @@ function deleteGig(id) {
  * @param {Date} d 
  */
 function setFromDate(d) {
-    const locWithoutOldDate=location.href.replace(/[?&]asif=[^?&]+/g,"").replace(/\?/,"&");
-    const newUrl =(!d || d == new Date().toISOString().substring(0, 10))
+    const locWithoutOldDate = location.href.replace(/[?&]asif=[^?&]+/g, "").replace(/\?/, "&");
+    const newUrl = (!d || d == new Date().toISOString().substring(0, 10))
         ? locWithoutOldDate
         : locWithoutOldDate + "&asif=" + d;
-    window.open(newUrl.replace(/&/,"?"), "_self");
+    window.open(newUrl.replace(/&/, "?"), "_self");
+    threadFlag(1);
 }
 
 /**
@@ -487,7 +488,13 @@ function setFromDate(d) {
  * @param {*} alignment 
  */
 function setAlignment(alignment) {
-    const locWithoutOldAlign=location.href.replace(/[?&]align=[^&?]+/g,"").replace(/\?/,"&");
-    let newUrl = locWithoutOldAlign + (alignment? "&align=" + alignment : "");
-    window.open(newUrl.replace(/&/,"?"), "_self");
+    const locWithoutOldAlign = location.href.replace(/[?&]align=[^&?]+/g, "").replace(/\?/, "&");
+    let newUrl = locWithoutOldAlign + (alignment ? "&align=" + alignment : "");
+    window.open(newUrl.replace(/&/, "?"), "_self");
+    threadFlag(1);
+}
+
+const locWithoutAlign = location.href.replace(/[?&]align=[^&?]+/g, "").replace(/\?/s, "&").replace(/&/, "?");
+if (locWithoutAlign != location.href) {
+    window.history.replaceState({}, "", locWithoutAlign);
 }

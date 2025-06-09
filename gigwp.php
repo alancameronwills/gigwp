@@ -491,7 +491,7 @@ function gigwp_gig_show($gigs, $width, $height, $align, $background, $category, 
                 </script>
                 <div class='controls'>
                     <label class="alignment-control">
-                        Layout: 
+                        Alignment: 
                         <select onchange="setAlignment(this.value)">
                             <option value="">(default)</option>
                             <?php
