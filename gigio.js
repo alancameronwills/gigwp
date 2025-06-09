@@ -3,19 +3,19 @@
 // ****** Expanding Images **********
 
 
-function gigwpExpandImages() {
-    gigwpa("img").forEach(i => i.addEventListener("click", e => {
+function gigioExpandImages() {
+    gigioa("img").forEach(i => i.addEventListener("click", e => {
         e.preventDefault();
         e.stopPropagation();
-        gigwp().expandedImage = e.target.classList.toggle("expand-image")
+        gigio().expandedImage = e.target.classList.toggle("expand-image")
             ? e.target
             : null;
     }));
     document.addEventListener("keydown", e => {
         if (e.key == "Escape") {
-            if (gigwp().expandedImage) {
-                gigwp().expandedImage.classList.remove("expand-image");
-                gigwp().expandedImage = null;
+            if (gigio().expandedImage) {
+                gigio().expandedImage.classList.remove("expand-image");
+                gigio().expandedImage = null;
             }
         }
     })
@@ -30,10 +30,10 @@ function gigwpExpandImages() {
 function fillGigList(gigListJson) {
     const gigList = JSON.parse(gigListJson);
     let gigListHtml = gigList.map(gig => gigHtml(gig)).join("\n");
-    gigwp(".giglist>.gigs").innerHTML = gigListHtml;
-    if (window?.setHandlers) setHandlers(gigwpa(".gig"));
-    if (gigwp(".giglist").classList.contains("align-columns")) {
-        window.gigsElementsInOrder = gigwpa(".gig");
+    gigio(".giglist>.gigs").innerHTML = gigListHtml;
+    if (window?.setHandlers) setHandlers(gigioa(".gig"));
+    if (gigio(".giglist").classList.contains("align-columns")) {
+        window.gigsElementsInOrder = gigioa(".gig");
         rearrangeGigsByColumns();
     }
 
@@ -43,7 +43,7 @@ function fillGigList(gigListJson) {
 function rearrangeGigsByColumns(event) {
     if (!event) window.addEventListener("resize", rearrangeGigsByColumns);
     const columnCount = Math.max(Math.floor(window.innerWidth / (window.gigWidth || 340)), 1);
-    let gigsTop = gigwp(".giglist>.gigs");
+    let gigsTop = gigio(".giglist>.gigs");
     if (gigsTop.children.length == columnCount
         && gigsTop.children[0].classList.contains("gig-column")) {
         return;

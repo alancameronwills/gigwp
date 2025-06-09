@@ -18,7 +18,7 @@ function helpGigs(event) {
  */
 function insertGig(post) {
     let postDom = jQuery.parseHTML(gigHtml(post))[0];
-    gigwp(".giglist>.gigs").prepend(postDom);
+    gigio(".giglist>.gigs").prepend(postDom);
     setHandlers(postDom);
     setFieldsEditable();
     return postDom;
@@ -43,18 +43,18 @@ function refreshGig(gig, post) {
 function editGig(event, on) {
     event?.stopPropagation?.();
     event?.preventDefault?.();
-    gigwp(".giglist").classList.toggle("editing", on);
+    gigio(".giglist").classList.toggle("editing", on);
     setFieldsEditable();
 }
 function setFieldsEditable() {
-    if (gigwp(".giglist").classList.contains("editing")) {
-        gigwpa("div.gig-field").forEach(div => div.contentEditable = true);
-        gigwpa("input.gig-field").forEach(div => div.disabled = false);
-        gigwp("#editButton").innerText = ("Done");
+    if (gigio(".giglist").classList.contains("editing")) {
+        gigioa("div.gig-field").forEach(div => div.contentEditable = true);
+        gigioa("input.gig-field").forEach(div => div.disabled = false);
+        gigio("#editButton").innerText = ("Done");
     } else {
-        gigwpa(".gig-field").forEach(div => div.contentEditable = false);
-        gigwpa("input.gig-field").forEach(div => div.disabled = true);
-        gigwp("#editButton").innerText = ("Edit");
+        gigioa(".gig-field").forEach(div => div.contentEditable = false);
+        gigioa("input.gig-field").forEach(div => div.disabled = true);
+        gigio("#editButton").innerText = ("Edit");
     }
 }
 
@@ -111,7 +111,7 @@ function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
                 insertGig(confirmedPost);
                 threadFlag(-1, () => {
                     jQuery('html, body').animate({
-                        scrollTop: jQuery("gigwp-capsule").offset().top
+                        scrollTop: jQuery("gigio-capsule").offset().top
                     }, 2000);
                     editGig(null, true);
                 });
@@ -142,7 +142,7 @@ var threads = 0;
 
 function threadFlag(count, f) {
     threads += count;
-    const flag = gigwp(".giglist");
+    const flag = gigio(".giglist");
     if (threads > 0) {
         flag.classList.add("edit-in-progress");
         // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
@@ -252,7 +252,7 @@ function readDates(s) {
 }
 
 function getGigData(gig) {
-    if (!gigwp(".giglist").classList.contains("editing")) return false;
+    if (!gigio(".giglist").classList.contains("editing")) return false;
     const postid = gig.attributes["data-id"]?.value;
     const titleDiv = gig.querySelector(".gig-title");
     let title = titleDiv.innerText;
@@ -391,7 +391,7 @@ gigUpdateHandlers.push(gig => {
 gigUpdateHandlers.push(gig => {
     gig.addEventListener("focusout", function (e) {
         // https://learn.wordpress.org/tutorial/interacting-with-the-wordpress-rest-api/
-        if (!gigwp(".giglist").classList.contains("editing")) return;
+        if (!gigio(".giglist").classList.contains("editing")) return;
         gig.focussed = setTimeout(() => {
             // Do this when it's clear we're not just 
             // hopping to another field in same gig
@@ -454,13 +454,13 @@ function gigTemplateEditingMap(post, map) {
  * @param {} id 
  */
 function deleteGig(id) {
-    let gig = gigwp(`.gig[data-id="${id}"]`);
+    let gig = gigio(`.gig[data-id="${id}"]`);
     let title = gig.querySelector(".gig-title").innerText;
     if (confirm(`Delete event "${title}" ?`)) {
         const post = new wp.api.models.Post({ id: id });
         threadFlag(1);
         post.destroy().done(function (post) {
-            gigwp(`.gig[data-id="${id}"]`).remove();
+            gigio(`.gig[data-id="${id}"]`).remove();
             threadFlag(-1);
             if (window.gigsElementsInOrder) {
                 // align-columns layout

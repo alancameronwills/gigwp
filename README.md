@@ -11,7 +11,7 @@ This plugin:
 * Shows the next date for a recurring sequence, for example a regular club or class.
 
 ## Install
-Download [the latest Zip file grom GitHub](https://github.com/alancameronwills/gigwp/archive/refs/heads/main.zip).
+Download [the latest Zip file grom GitHub](https://gigiau.uk/gigio.zip).
 
 Sign in to WordPress, then go to **Plugins > Add > Upload from file**
 
