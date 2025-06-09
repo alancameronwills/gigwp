@@ -40,7 +40,7 @@
 .giglist>.gigs {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: space-evenly;
     align-items: flex-start;
     gap: 20px;
     padding: 10px;
@@ -112,6 +112,10 @@
 .giglist .controls>label {
     font-size: smaller;
     margin: 2px 2px 0 2px;
+}
+
+.giglist:not(.editing) .alignment-control {
+    display:none;
 }
 
 .giglist button:hover {

@@ -471,14 +471,23 @@ function deleteGig(id) {
 }
 
 /**
- * User chose a 'show from' date
+ * Admin chose a 'show from' date
  * @param {Date} d 
  */
 function setFromDate(d) {
-    if (!d || d == new Date().toISOString().substring(0, 10)) {
-        window.open(location.href.replace(/[?&]asif=[-0-9]+/,""), "_self");
-    } else {
-        const c = location.href.indexOf('?') >= 0 ? '&' : '?';
-        window.open(`${location.href}${c}asif=` + d, "_self");
-    }
+    const locWithoutOldDate=location.href.replace(/[?&]asif=[^?&]+/g,"").replace(/\?/,"&");
+    const newUrl =(!d || d == new Date().toISOString().substring(0, 10))
+        ? locWithoutOldDate
+        : locWithoutOldDate + "&asif=" + d;
+    window.open(newUrl.replace(/&/,"?"), "_self");
+}
+
+/**
+ * Admin chose an alignment option
+ * @param {*} alignment 
+ */
+function setAlignment(alignment) {
+    const locWithoutOldAlign=location.href.replace(/[?&]align=[^&?]+/g,"").replace(/\?/,"&");
+    let newUrl = locWithoutOldAlign + (alignment? "&align=" + alignment : "");
+    window.open(newUrl.replace(/&/,"?"), "_self");
 }

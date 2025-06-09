@@ -70,6 +70,7 @@ add_shortcode("gigiau", "gigwp_events_list_shortcode");
 function gigwp_events_list_shortcode($attributes = [])
 {
     global $gigwp_category_id;
+
     extract(shortcode_atts(
         [
             'layout' => "image title dates venue", // order of appearance in each gig
@@ -80,36 +81,52 @@ function gigwp_events_list_shortcode($attributes = [])
             'popImages' => true, // expand image on user click
             'venue' => "",
             'book' => "Book Tickets",
-            'align' => "base" //bottom | top | base | cover | columns 
+            'align' => "base", //bottom | top | base | cover | columns 
+            'background' => "whitesmoke"
         ],
         $attributes
     ));
 
-    if ($height == 0) {
+    $category_valid = validate_param($category, "/^[a-z]+$/", GIGWP_CATEGORY);
+
+    // If this is first time:
+    $gigwp_category_id = wp_create_category($category_valid);
+
+    if ($width <= 30 || $width > 1000) {
+        $width = 340;
+    }
+
+    if ($height <= 30 || $height > 2000) {
         $height = floor(1.4214 * $width);
     }
 
-    // If this is first time:
-    $gigwp_category_id = wp_create_category($category);
-
-    $fromDate = $_GET['asif'] ?? $asIfDate ?? date('Y-m-d');
-
-    $alignOption = $_GET['align'] ?? $align ;
-
-
-    if (!preg_match("/^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/", $fromDate)) {
-        $fromDate = date('Y-m-d');
+    $layout_valid = validate_param($layout, "/[a-z ]{3,40}/", "image title dates venue");
+    $background_valid = validate_param($background, "/^#[0-9a-fA-F]{6,8}$|^[-a-z]+$|^[a-z]+?\([0-9,]+\)$/", "whitesmoke");
+    $from_date_valid = validate_param($_GET['asif'] ?? $asIfDate, "/^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/", date('Y-m-d'));
+    $align_valid = validate_param($_GET['align'] ?? get_option("gigwpalignment",  $align), "/[-a-z]{1,20}/", "base");
+    if (current_user_can('edit_others_pages')) {
+        if ($_GET['align']??false) {
+            update_option("gigwpalignment", $align_valid);
+        }
     }
+    
 
-    if (!preg_match("/^[-a-z]+$/",$align)) $align="top";
+    return gigwp_gig_list($from_date_valid, $category_valid, $width, $height, $align_valid, $background_valid, $popImages, $layout_valid, $_GET['json'] ?? false, $venue, $book);
+}
 
-
-    return gigwp_gig_list($fromDate, $category, $width, $height, $alignOption, $popImages, $layout, $_GET['json'] ?? false, $venue, $book);
+function validate_param($param, $pattern, $default)
+{
+    $matches = [];
+    if (is_string($param) && preg_match($pattern, $param, $matches)) {
+        return $matches[0];
+    } else {
+        return $default;
+    }
 }
 
 
 
-function gigwp_gig_list($fromDate, $category, $width, $height, $align, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel)
+function gigwp_gig_list($fromDate, $category, $width, $height, $align, $background, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel)
 {
     $postDated = gigwp_get_gigs_with_recurs($fromDate, $category);
     if ($json == 2) {
@@ -123,7 +140,7 @@ function gigwp_gig_list($fromDate, $category, $width, $height, $align, $popImage
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
-    return gigwp_gig_show($gigs, $width, $height, $align, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel);
+    return gigwp_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel);
 }
 
 function gigwp_get_gigs_with_recurs($fromDate, $category)
@@ -204,7 +221,7 @@ function gigwp_get_gigs($fromDate, $category, $postIds = [])
             'link' => get_permalink(),
             'title' => get_the_title(),
             'content' => get_the_content(),
-			'smallpic' => get_the_post_thumbnail_url(null, "medium"),
+            'smallpic' => get_the_post_thumbnail_url(null, "medium"),
             'pic' => get_the_post_thumbnail_url(null, "full"),
             'meta' => array_map(function ($m) {
                 return $m[0];
@@ -422,7 +439,7 @@ function gigwp_gig_template($isSignedIn, $layout = "venue image title dates", $d
  * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigwp_gig_show($gigs, $width, $height, $align, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel)
+function gigwp_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel)
 {
     global $gigwp_category_id;
     $alignClass = "align-$align";
@@ -456,12 +473,13 @@ function gigwp_gig_show($gigs, $width, $height, $align, $category, $popImages, $
         });
     </script>
     <gigwp-capsule>
-        <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigwp.css" > 
-        <div id="giglist" class="giglist <?=$alignClass?>">
+        <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigwp.css">
+        <div id="giglist" class="giglist <?= $alignClass ?>">
             <style>
                 #giglist {
-                    --pic-width:<?= $width ?>px;
-                    --pic-height:<?= $height ?>px;
+                    --pic-width: <?= $width ?>px;
+                    --pic-height: <?= $height ?>px;
+                    --background: <?= $background ?? "whitesmoke" ?>;
                 }
             </style>
             <?php if (current_user_can('edit_others_pages')) {  ?>
@@ -472,6 +490,19 @@ function gigwp_gig_show($gigs, $width, $height, $align, $category, $popImages, $
                     window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $DefaultBookButtonLabel) ?>";
                 </script>
                 <div class='controls'>
+                    <label class="alignment-control">
+                        Layout: 
+                        <select onchange="setAlignment(this.value)">
+                            <option value="">(default)</option>
+                            <?php
+                            foreach (["columns", "cover", "top", "base", "bottom"] as $option) {
+                                ?>
+                                <option value='<?= $option ?>' <?=($option == $align ? "selected" : "") ?>><?= $option ?></option>
+                                <?php
+                            }
+                            ?>
+                        </select>
+                    </label>
                     <label>Show as if on: <input type="date" value="<?= $fromDate ?>" oninput="setFromDate(this.value)" /></label>
                     <button id="addButton" title="add event posters" onclick='addGig(event)'>Add</button>
                     <button id="editButton" title="edit the event details" onclick='editGig(event)'>Edit</button>
@@ -488,6 +519,7 @@ function gigwp_gig_show($gigs, $width, $height, $align, $category, $popImages, $
         function gigwp(selector) {
             return selector ? window.gigwpCapsuleRoot.querySelector(selector) : window.gigwpCapsuleRoot;
         }
+
         function gigwpa(selector) {
             return window.gigwpCapsuleRoot.querySelectorAll(selector);
         }
