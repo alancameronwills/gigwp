@@ -79,13 +79,12 @@
     }
     .gig>div {
         width:100%;
-        padding: 0;
     }
     .gig>.gigpic>img {
         width:100%;
     }
     .gig {
-        margin: 10px 0;
+        margin: 20px 0;
     }
 }
 

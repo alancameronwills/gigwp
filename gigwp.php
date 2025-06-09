@@ -80,7 +80,7 @@ function gigwp_events_list_shortcode($attributes = [])
             'popImages' => true, // expand image on user click
             'venue' => "",
             'book' => "Book Tickets",
-            'align' => "top" //bottom | top | stretch | base 
+            'align' => "base" //bottom | top | base | cover | columns 
         ],
         $attributes
     ));
@@ -94,6 +94,8 @@ function gigwp_events_list_shortcode($attributes = [])
 
     $fromDate = $_GET['asif'] ?? $asIfDate ?? date('Y-m-d');
 
+    $alignOption = $_GET['align'] ?? $align ;
+
 
     if (!preg_match("/^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/", $fromDate)) {
         $fromDate = date('Y-m-d');
@@ -102,7 +104,7 @@ function gigwp_events_list_shortcode($attributes = [])
     if (!preg_match("/^[-a-z]+$/",$align)) $align="top";
 
 
-    return gigwp_gig_list($fromDate, $category, $width, $height, $align, $popImages, $layout, $_GET['json'] ?? false, $venue, $book);
+    return gigwp_gig_list($fromDate, $category, $width, $height, $alignOption, $popImages, $layout, $_GET['json'] ?? false, $venue, $book);
 }
 
 
