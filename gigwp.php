@@ -378,17 +378,17 @@ function gigwp_gig_template($isSignedIn, $layout = "venue image title dates", $d
                     <legend>Venue and booking or more info link</legend>
                     <div>
                         <label>Venue (optional):
-                            <input class="gig-venue" name="gig-venue" class="gig-field" placeholder="<?= $defaultVenue ?>" value="%venue" />
+                            <input class="gig-venue gig-field" name="gig-venue" placeholder="<?= $defaultVenue ?>" value="%venue" />
                         </label>
                     </div>
                     <div>
                         <label>Button label:
-                            <input class="gig-booklabel" placeholder="Book" class="gig-field" value="%booklabel" />
+                            <input class="gig-booklabel gig-field" placeholder="Book" value="%booklabel" />
                         </label>
                     </div>
                     <div>
                         <label class="gig-bookinglink-group">Button link:
-                            <input class="gig-bookinglink" type="url" class="gig-field" placeholder="https://..." value="%bookinglink" />
+                            <input class="gig-bookinglink gig-field" type="url" placeholder="https://..." value="%bookinglink" />
                         </label>
                     </div>
                     <div>
