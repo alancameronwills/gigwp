@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.5
+ * @version 1.5.1
  * @wordpress-plugin
  * 
  * Plugin Name: Gigiau Events Posters
@@ -82,7 +82,8 @@ function gigio_events_list_shortcode($attributes = [])
             'venue' => "",
             'book' => "Book Tickets",
             'align' => "base", //bottom | top | base | cover | columns 
-            'background' => "whitesmoke"
+            'background' => "whitesmoke",
+            'venueinfilename' => false // Poster filename format: Title YYYY-MM-DD[-YYYY-MM-DD] [Extra info | Venue]
         ],
         $attributes
     ));
@@ -111,7 +112,7 @@ function gigio_events_list_shortcode($attributes = [])
     }
     
 
-    return gigio_gig_list($from_date_valid, $category_valid, $width, $height, $align_valid, $background_valid, $popImages, $layout_valid, $_GET['json'] ?? false, $venue, $book);
+    return gigio_gig_list($from_date_valid, $category_valid, $width, $height, $align_valid, $background_valid, $popImages, $layout_valid, $_GET['json'] ?? false, $venue, $book, $venueinfilename);
 }
 
 function validate_param($param, $pattern, $default)
@@ -126,7 +127,7 @@ function validate_param($param, $pattern, $default)
 
 
 
-function gigio_gig_list($fromDate, $category, $width, $height, $align, $background, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel)
+function gigio_gig_list($fromDate, $category, $width, $height, $align, $background, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel, $venueInFilename)
 {
     $postDated = gigio_get_gigs_with_recurs($fromDate, $category);
     if ($json == 2) {
@@ -140,7 +141,7 @@ function gigio_gig_list($fromDate, $category, $width, $height, $align, $backgrou
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
-    return gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel);
+    return gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel, $venueInFilename);
 }
 
 function gigio_get_gigs_with_recurs($fromDate, $category)
@@ -439,7 +440,7 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
  * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel)
+function gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel, $venueInFilename)
 {
     global $GIGIO_CATEGORY_id;
     $alignClass = "align-$align";
@@ -488,6 +489,7 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
                     window.gigiauCategoryId = "<?= $GIGIO_CATEGORY_id ?>";
                     window.gigiauCategory = "<?= $category ?>";
                     window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $DefaultBookButtonLabel) ?>";
+                    window.gigiauVenueInFilename = <?= !!$venueInFilename ?>;
                 </script>
                 <div class='controls'>
                     <label class="alignment-control">

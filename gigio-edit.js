@@ -73,7 +73,7 @@ function addGig(event) {
  * @param {number} img Poster image ID
  * @param {YYY-MM-DD} dtstart 
  * @param {YYY-MM-DD} dtend 
- * @param {string} dtinfo 
+ * @param {string} dtinfo or venue
  * @returns void
  */
 function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
@@ -97,10 +97,16 @@ function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
         meta: {
             'dtstart': dtstart,
             'dtend': dtend,
-            'dtinfo': dtinfo,
             "recursday": 0
         }
     };
+    // Parameter from shortcode:
+    if (window.gigiauVenueInFilename) {
+        query.meta.venue = dtinfo;
+    } else {
+        query.meta.dtinfo = dtinfo;
+    }
+    
     // https://developer.wordpress.org/rest-api/using-the-rest-api/backbone-javascript-client/
     const post = new wp.api.models.Post(query);
     post.save().done(confirmedPost => {
@@ -494,7 +500,7 @@ function setAlignment(alignment) {
     threadFlag(1);
 }
 
-const locWithoutAlign = location.href.replace(/[?&]align=[^&?]+/g, "").replace(/\?/s, "&").replace(/&/, "?");
+const locWithoutAlign = location.href.replace(/\?.*/, "");
 if (locWithoutAlign != location.href) {
     window.history.replaceState({}, "", locWithoutAlign);
 }

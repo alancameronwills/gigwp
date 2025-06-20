@@ -161,7 +161,9 @@
     color: black;
     overflow: hidden;
     position: relative;
-    border: 1px solid gray;
+    border: 2px solid gray;
+    border-radius: 10px;
+    box-shadow: 5px 5px lightgray;
 }
 
 .gig input {
@@ -245,6 +247,7 @@ span.recurrence {
 .gigpic {
     position:relative; 
     padding:0;
+    margin-top: -1px;
 }
 
 .gigpic>img {
