@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.5.1
+ * @version 1.5.2
  * @wordpress-plugin
  * 
  * Plugin Name: Gigiau Events Posters
@@ -233,33 +233,44 @@ function gigio_get_gigs($fromDate, $category, $postIds = [])
     endwhile;
     wp_reset_postdata();
 
-    // Reset start dates of recurrent gigs:
-    for ($i = 0; $i < count($gigs); $i++) { // foreach creates a copy
-        // if start date is past, and there is a recurrence
-        $gm = &$gigs[$i]['meta']; // Must be reference, else we are writing to a copy
-        if (strcmp($gm['dtstart'], $fromDate) < 0 && $gm['recursday']) {
-            // Recurrence - set the start date
-            $nextDate = gigio_nthDayOfMonth($gm['recursday'], $gm['recursweeks'], new DateTime($fromDate));
-            $nextDateString = date_format($nextDate, 'Y-m-d');
-            $gm['dtsince'] = $gm['dtstart']; // keep old start date
-            if ($gm['dtstart'] == $gm['dtend']) {
-                // Preserve "recurs forever" flag i.e. dtstart==dtend
-                $gm['dtend'] = $nextDateString;
+    try {
+        // Reset start dates of recurrent gigs:
+        for ($i = 0; $i < count($gigs); $i++) { // foreach creates a copy
+            // if start date is past, and there is a recurrence
+            $gm = &$gigs[$i]['meta']; // Must be reference, else we are writing to a copy
+            if (strcmp($gm['dtstart'], $fromDate) < 0 && $gm['recursday']) {
+                // Recurrence - set the start date
+                $nextDate = gigio_nthDayOfMonth($gm['recursday'], $gm['recursweeks'], new DateTime($fromDate), $gm['recursfortnight'] ? new DateTime($gm['dtstart']) : false);
+                $nextDateString = date_format($nextDate, 'Y-m-d');
+                $gm['dtsince'] = $gm['dtstart']; // keep old start date
+                if ($gm['dtstart'] == $gm['dtend']) {
+                    // Preserve "recurs forever" flag i.e. dtstart==dtend
+                    $gm['dtend'] = $nextDateString;
+                }
+                $gm['dtstart'] = $nextDateString;
             }
-            $gm['dtstart'] = $nextDateString;
+            // Note that if user edits gig, they will permanently reset the start date
         }
-        // Note that if user edits gig, they will permanently reset the start date
-    }
+    } catch (Exception $e) {}
     usort($gigs, function ($a, $b) {
         return strcmp($a['meta']['dtstart'] ?? "", $b['meta']['dtstart'] ?? "");
     });
     return $gigs;
 }
 
-function gigio_nthDayOfMonth($dayOfWeek, $weeksInMonth, $today)
+function gigio_nthDayOfMonth($dayOfWeek, $weeksInMonth, $today, $fortnightFrom)
 {
     if (!$today) {
         $today = new DateTime('NOW');
+    }
+    if ($fortnightFrom != false) { // Every two weeks
+        $diff = $today->diff($fortnightFrom)->format("%a")*1;
+        $dt = clone $fortnightFrom; 
+        if ($diff > 0) {
+            $increment = (floor($diff / 14)+1)*14;
+            $dt->add(new DateInterval("P{$increment}D"));
+        }
+        return $dt;
     }
     $result = NULL;
     $current_month = $today->format("n") + 0;
@@ -388,6 +399,8 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
                     <select class="gig-recursday">
                         %gigdayoptions
                     </select>
+                    Every 14 days: 
+                    %gigfortnightoption
                     <br />
                     <fieldset class="gig-recursweek">
                         <legend>Recurs in weeks of month:</legend>
@@ -489,7 +502,7 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
                     window.gigiauCategoryId = "<?= $GIGIO_CATEGORY_id ?>";
                     window.gigiauCategory = "<?= $category ?>";
                     window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $DefaultBookButtonLabel) ?>";
-                    window.gigiauVenueInFilename = <?= !!$venueInFilename ?>;
+                    window.gigiauVenueInFilename = "<?= !!$venueInFilename ?>";
                 </script>
                 <div class='controls'>
                     <label class="alignment-control">

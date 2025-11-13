@@ -49,6 +49,7 @@
 
 .gigpic>img {
     width: var(--pic-width);
+    max-width: 100%;
 }
 .gig>div {
     width: var(--pic-width);

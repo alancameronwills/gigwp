@@ -81,7 +81,10 @@ function gigHtml(post) {
 		</div>`;
     let gigdates = friendlyDate(post.meta.dtstart) +
         (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
-    if (post.meta.recursday && post.meta.recursweeks) {
+    if (post.meta.recursfortnight) {
+        gigdates += " <span class='recurrence'>every 14 days</span>";
+    }
+    if (post.meta.recursweeks) {
         const weeks = "" + post.meta.recursweeks; // cast from number
         let nth = [];
         if (weeks != "12345") {

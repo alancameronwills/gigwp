@@ -106,7 +106,7 @@ function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
     } else {
         query.meta.dtinfo = dtinfo;
     }
-    
+
     // https://developer.wordpress.org/rest-api/using-the-rest-api/backbone-javascript-client/
     const post = new wp.api.models.Post(query);
     post.save().done(confirmedPost => {
@@ -270,6 +270,8 @@ function getGigData(gig) {
     const dtstart = inputValue(gig, ".gig-dtstart");
     const dtend = inputValue(gig, ".gig-dtend");
 
+    let recursfortnight = gig.querySelector(".gig-r14d").checked;
+
     let recursday = inputValue(gig, ".gig-recursday");
 
     let recursweeks = "";
@@ -292,6 +294,7 @@ function getGigData(gig) {
             dtstart: dtstart,
             dtend: dtend || dtstart,
             dtinfo: dtinfo,
+            recursfortnight: recursfortnight,
             recursday: recursday,
             recursweeks: recursweeks,
             venue: venue,
@@ -309,10 +312,13 @@ function validate(data, savedData) {
         const fixedDtend = new Date(data.meta.dtstart).valueOf() + Math.max(0, diff);
         data.meta.dtend = new Date(fixedDtend).toISOString().substring(0, 10);
     }
+    if (data.meta?.recursfortnight) {
+        data.meta.recursweeks = "";
+    }
     if (!data.meta?.recursday) {
         data.meta.recursweeks = "";
     }
-    if (!data.meta.recursweeks?.trim()) {
+    if (!data.meta.recursweeks?.trim() && !data.meta.recursfortnight) {
         data.meta.recursday = 0;
     }
 }
@@ -355,11 +361,12 @@ function setGigFormColours(g) {
     let dtend = inputValue(g, "input.gig-dtend");
     let recursday = inputValue(g, ".gig-recursday");
     let recursdayValue = 1 * recursday || 0;
-    g.classList.toggle("onedate", dtstart == dtend);
-    g.classList.toggle("recurs", !!recursdayValue);
+    let recursfortnight = g.querySelector(".gig-r14d").checked;
     let rweekscount = g.querySelectorAll(".gig-recursweek input:checked").length;
+    g.classList.toggle("onedate", dtstart == dtend);
+    g.classList.toggle("recurs", recursfortnight || rweekscount > 0);
 
-    if (recursdayValue == 0 && rweekscount > 0) {
+    if ((recursdayValue == 0 && rweekscount > 0) || recursfortnight) {
         g.querySelector(".gig-recursday").value = new Date(dtstart).getDay();
     }
 
@@ -379,15 +386,25 @@ gigUpdateHandlers.push(gig => {
                 dtend.value = e.target.value;
             }
         }
+        if (e.target.classList.contains("gig-r14d")) {
+            if (e.target.checked) {
+                gig.querySelectorAll(".gig-recursweek input[type='checkbox']").forEach((cb => cb.checked = false));
+            }
+        }
         if (e.target.classList.contains("gig-recursday")) {
             if (1 * e.target.value) {
                 const weekBoxes = gig.querySelectorAll(".gig-recursweek input[type='checkbox']");
-                if (Array.from(weekBoxes).every(cb => cb.checked == false)) {
+                if (!gig.querySelector(".gig-r14d").checked && Array.from(weekBoxes).every(cb => cb.checked == false)) {
                     weekBoxes.forEach((cb => cb.checked = true));
                 }
             } else {
+                gig.querySelector(".gig-r14d").checked = false;
                 gig.querySelectorAll(".gig-recursweek input[type='checkbox']").forEach((cb => cb.checked = false));
             }
+        }
+        let rweekscount = gig.querySelectorAll(".gig-recursweek input:checked").length;
+        if (rweekscount>0) {
+                gig.querySelector(".gig-r14d").checked = false;
         }
         setGigFormColours(gig);
     });
@@ -444,11 +461,13 @@ function gigTemplateEditingMap(post, map) {
             ${(recursweeks.indexOf("" + i) < 0 ? "" : " checked")}/>
             <label for="${id}" >${i == 5 ? "last" : i}</label></span>`;
         }).join("");
+    let gigfortnightoption = `<input class='gig-r14d' type='checkbox' id='gig-r14d-${post.id}' name='gig-r14d-${post.id}' ${post.meta.recursfortnight ? " checked" : ""} />`;
 
     map["gigdtstart"] = post.meta.dtstart || "";
     map["gigdtend"] = post.meta.dtend || "";
     map["gigdayoptions"] = gigdayoptions;
     map["gigweekoptions"] = gigweekoptions;
+    map["gigfortnightoption"] = gigfortnightoption;
     map["venue"] = post.meta.venue || "";
     map["booklabel"] = post.meta.booklabel || "";
     map["bookinglink"] = post.meta.bookinglink || "";
