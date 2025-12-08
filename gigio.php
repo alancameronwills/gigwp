@@ -73,15 +73,17 @@ function gigio_events_list_shortcode($attributes = [])
 
     extract(shortcode_atts(
         [
-            'layout' => "image title dates venue", // order of appearance in each gig
-            'width' => 340,  // px width of images,
+            'layout' => "shortdate image title dates venue", // order of appearance in each gig
+            'width' => 300,  // px width of images,
             'height' => 0,   // px height of images - defaults to sqrt(2)*width
-            'asIfDate' => null, // Display from this date - can also use ?asif=YYYY-MM-DD
+            'asIfDate' => null, // Display from this date - can also use URL ?asif=YYYY-MM-DD
             'category' => GIGIO_CATEGORY,
             'popImages' => true, // expand image on user click
             'venue' => "",
             'book' => "Book Tickets",
             'align' => "base", //bottom | top | base | cover | columns 
+            'strip' => false, // true -> single horizontal sliding row; false -> rows with wraparound
+            'max' => 0, // max count of items; typically use with strip
             'background' => "whitesmoke",
             'venueinfilename' => false // Poster filename format: Title YYYY-MM-DD[-YYYY-MM-DD] [Extra info | Venue]
         ],
@@ -101,18 +103,22 @@ function gigio_events_list_shortcode($attributes = [])
         $height = floor(1.4214 * $width);
     }
 
-    $layout_valid = validate_param($layout, "/[a-z ]{3,40}/", "image title dates venue");
+    if ($strip && !$max) {
+        $max = 10;
+    }
+
+    $layout_valid = validate_param($layout, "/[a-z ]{3,40}/", "shortdate image title dates venue");
     $background_valid = validate_param($background, "/^#[0-9a-fA-F]{6,8}$|^[-a-z]+$|^[a-z]+?\([0-9,]+\)$/", "whitesmoke");
     $from_date_valid = validate_param($_GET['asif'] ?? $asIfDate, "/^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/", date('Y-m-d'));
     $align_valid = validate_param($_GET['align'] ?? get_option("gigioalignment",  $align), "/[-a-z]{1,20}/", "base");
     if (current_user_can('edit_others_pages')) {
-        if ($_GET['align']??false) {
+        if ($_GET['align'] ?? false) {
             update_option("gigioalignment", $align_valid);
         }
     }
-    
 
-    return gigio_gig_list($from_date_valid, $category_valid, $width, $height, $align_valid, $background_valid, $popImages, $layout_valid, $_GET['json'] ?? false, $venue, $book, $venueinfilename);
+
+    return gigio_gig_list($from_date_valid, $category_valid, $width, $height, $align_valid, $background_valid, $popImages, $layout_valid, $_GET['json'] ?? false, $venue, $book, $venueinfilename, $strip, $max);
 }
 
 function validate_param($param, $pattern, $default)
@@ -127,7 +133,7 @@ function validate_param($param, $pattern, $default)
 
 
 
-function gigio_gig_list($fromDate, $category, $width, $height, $align, $background, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel, $venueInFilename)
+function gigio_gig_list($fromDate, $category, $width, $height, $align, $background, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel, $venueInFilename, $strip, $max)
 {
     $postDated = gigio_get_gigs_with_recurs($fromDate, $category);
     if ($json == 2) {
@@ -141,7 +147,11 @@ function gigio_gig_list($fromDate, $category, $width, $height, $align, $backgrou
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
-    return gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel, $venueInFilename);
+    if ($max > 0) {
+        $gigs = array_slice($gigs, 0, $max);
+    }
+
+    return gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel, $venueInFilename, $strip);
 }
 
 function gigio_get_gigs_with_recurs($fromDate, $category)
@@ -251,7 +261,8 @@ function gigio_get_gigs($fromDate, $category, $postIds = [])
             }
             // Note that if user edits gig, they will permanently reset the start date
         }
-    } catch (Exception $e) {}
+    } catch (Exception $e) {
+    }
     usort($gigs, function ($a, $b) {
         return strcmp($a['meta']['dtstart'] ?? "", $b['meta']['dtstart'] ?? "");
     });
@@ -264,10 +275,10 @@ function gigio_nthDayOfMonth($dayOfWeek, $weeksInMonth, $today, $fortnightFrom)
         $today = new DateTime('NOW');
     }
     if ($fortnightFrom != false) { // Every two weeks
-        $diff = $today->diff($fortnightFrom)->format("%a")*1;
-        $dt = clone $fortnightFrom; 
+        $diff = $today->diff($fortnightFrom)->format("%a") * 1;
+        $dt = clone $fortnightFrom;
         if ($diff > 0) {
-            $increment = (floor($diff / 14)+1)*14;
+            $increment = (floor($diff / 14) + 1) * 14;
             $dt->add(new DateInterval("P{$increment}D"));
         }
         return $dt;
@@ -370,6 +381,13 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
                     </div>
                 <?php
                     break;
+                case "s":
+                ?>
+                    <div class="prop-show">
+                        <span class="show-dates">%gigshortdate</span>
+                    </div>
+                <?php
+                    break;
                 case "v":
                 ?>
                     <div class="venue">
@@ -399,7 +417,7 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
                     <select class="gig-recursday">
                         %gigdayoptions
                     </select>
-                    Every 14 days: 
+                    Every 14 days:
                     %gigfortnightoption
                     <br />
                     <fieldset class="gig-recursweek">
@@ -453,7 +471,7 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
  * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel, $venueInFilename)
+function gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel, $venueInFilename, $strip)
 {
     global $GIGIO_CATEGORY_id;
     $alignClass = "align-$align";
@@ -469,26 +487,28 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
         <?= gigio_gig_template(current_user_can('edit_others_pages'), $layout, $defaultVenue) ?>
     </script>
     <script>
-        customElements.define("gigio-capsule", class extends HTMLElement {
-            constructor() {
-                super();
-                this.attachShadow({
-                    mode: "open"
-                });
-            }
-            plus(element) {
-                this.shadowRoot.appendChild(element);
-            }
-            createShadow() {
-                // Move explicit subtree into shadow
-                Array.from(this.children).forEach(element => this.plus(element));
-                return this.shadowRoot;
-            }
-        });
+        if (!customElements.get("gigio-capsule")) {
+            customElements.define("gigio-capsule", class extends HTMLElement {
+                constructor() {
+                    super();
+                    this.attachShadow({
+                        mode: "open"
+                    });
+                }
+                plus(element) {
+                    this.shadowRoot.appendChild(element);
+                }
+                createShadow() {
+                    // Move explicit subtree into shadow
+                    Array.from(this.children).forEach(element => this.plus(element));
+                    return this.shadowRoot;
+                }
+            });
+        }
     </script>
     <gigio-capsule>
         <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigio.css">
-        <div id="giglist" class="giglist <?= $alignClass ?>">
+        <div id="giglist" class="giglist <?= $alignClass ?> <?= $strip ? "strip" : "" ?>">
             <style>
                 #giglist {
                     --pic-width: <?= $width ?>px;
@@ -506,14 +526,14 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
                 </script>
                 <div class='controls'>
                     <label class="alignment-control">
-                        Alignment: 
+                        Alignment:
                         <select onchange="setAlignment(this.value)">
                             <option value="">(default)</option>
                             <?php
                             foreach (["columns", "cover", "top", "base", "bottom"] as $option) {
-                                ?>
-                                <option value='<?= $option ?>' <?=($option == $align ? "selected" : "") ?>><?= $option ?></option>
-                                <?php
+                            ?>
+                                <option value='<?= $option ?>' <?= ($option == $align ? "selected" : "") ?>><?= $option ?></option>
+                            <?php
                             }
                             ?>
                         </select>
@@ -526,8 +546,13 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
             <?php }
             ?>
             <div class='gigs'>
-
             </div>
+            <?php if ($strip) {
+            ?>
+                <div class="sa_scrollButton sa_scrollerLeft">&nbsp;❱</div>
+                <div class="sa_scrollButton sa_scrollerRight">❰&nbsp;</div>
+            <?php }
+            ?>
         </div>
     </gigio-capsule>
     <script>
@@ -540,7 +565,7 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
         }
         jQuery(() => {
             window.gigioCapsuleRoot = document.querySelector("gigio-capsule").createShadow();
-            fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html());
+            fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html(), <?= $strip ?>);
             <?php
             if ($popImages) {
             ?>

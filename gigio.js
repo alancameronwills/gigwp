@@ -21,13 +21,33 @@ function gigioExpandImages() {
     })
 }
 
+// **** Scroll horizontal strip
+
+function scrollStripHandler() {
+    gigioa(".sa_scrollButton").forEach(i=>i.addEventListener("click", (function(e) {
+        let direction = this.className.indexOf("sa_scrollerLeft")>=0 ? 1 : -1;
+        let gigs = jQuery(this).parent().children(".gigs")[0];
+        if (gigs) kickSideways(gigs, direction);
+    })));
+
+    function kickSideways(target, direction) {
+        window.inhibitClick = window.setTimeout(() => { window.inhibitClick = null; }, 500);
+        let jtarget = jQuery(target);
+        let width = target.clientWidth || 400;
+        clearTimeout(window.smoothScrollTimeout);
+        jtarget.addClass("smoothie");
+        jtarget.scrollLeft(jtarget.scrollLeft() + (width / 2) * direction);
+        window.smoothScrollTimeout = setTimeout(() => jtarget.removeClass("smoothie"), 500);
+    }
+}
+
 // ********* Display gigs ************
 
 /**
  * On loading the page, show the content
  * @param {json} gigListJson 
  */
-function fillGigList(gigListJson) {
+function fillGigList(gigListJson, strip=false) {
     const gigList = JSON.parse(gigListJson);
     let gigListHtml = gigList.map(gig => gigHtml(gig)).join("\n");
     gigio(".giglist>.gigs").innerHTML = gigListHtml;
@@ -36,7 +56,9 @@ function fillGigList(gigListJson) {
         window.gigsElementsInOrder = gigioa(".gig");
         rearrangeGigsByColumns();
     }
-
+    if (strip) {
+        scrollStripHandler();
+    }
     window.scrollTo(0, 0);
 }
 
@@ -84,6 +106,7 @@ function gigHtml(post) {
     if (post.meta.recursfortnight) {
         gigdates += " <span class='recurrence'>every 14 days</span>";
     }
+    let gigshortdate =  friendlyDate(post.meta.dtstart);
     if (post.meta.recursweeks) {
         const weeks = "" + post.meta.recursweeks; // cast from number
         let nth = [];
@@ -111,6 +134,7 @@ function gigHtml(post) {
         "gigpic": imgLink,
         "gigimg": imgElement,
         "gigdates": gigdates,
+        "gigshortdate" : gigshortdate,
         "gigdtinfo": post.meta?.dtinfo || "",
         "bookbutton": bookbutton,
         "venue": post.meta?.venue || ""

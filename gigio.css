@@ -1,16 +1,14 @@
-
-
 .giglist>.gigs .gig .gigpic>img.expand-image {
-    width:100vw;
+    width: 100vw;
     height: 100vh;
-    max-width:100vw;
-    max-height:100vh;
+    max-width: 100vw;
+    max-height: 100vh;
     position: fixed;
     top: 0;
     left: 0;
     background-color: black;
-    object-fit:contain;
-    z-index:3000;
+    object-fit: contain;
+    z-index: 3000;
 }
 
 .giglist {
@@ -39,7 +37,6 @@
 
 .giglist>.gigs {
     display: flex;
-    flex-wrap: wrap;
     justify-content: space-evenly;
     align-items: flex-start;
     gap: 20px;
@@ -47,43 +44,70 @@
     color: black;
 }
 
+.giglist:not(.strip)>.gigs {
+    flex-wrap: wrap;
+}
+
 .gigpic>img {
     width: var(--pic-width);
     max-width: 100%;
 }
+
 .gig>div {
     width: var(--pic-width);
     object-fit: contain;
 }
 
 .giglist.align-bottom {
-    &>.gigs {align-items:flex-end;}
-    .gigpic>img {height:auto;}
+    &>.gigs {
+        align-items: flex-end;
+    }
+
+    .gigpic>img {
+        height: auto;
+    }
 }
+
 .giglist.align-top {
-   &>.gigs { align-items:flex-start; }
-  .gigpic>img{height:auto}
+    &>.gigs {
+        align-items: flex-start;
+    }
+
+    .gigpic>img {
+        height: auto
+    }
 }
+
 .giglist.align-base {
-   &>.gigs{align-items:baseline;}
-  .gigpic>img{height:auto}
+    &>.gigs {
+        align-items: baseline;
+    }
+
+    .gigpic>img {
+        height: auto
+    }
 }
+
 .giglist.align-cover {
-   .gigpic>img{
-         object-fit:cover;
-         height: var(--pic-height);
-   }
+    .gigpic>img {
+        object-fit: cover;
+        height: var(--pic-height);
+    }
 }
+
 .giglist.align-columns {
     .gigs {
         gap: 2%;
     }
+
     .gig>div {
-        width:100%;
+        width: 100%;
     }
+
     .gig>.gigpic>img {
-        width:100%;
+        width: 100%;
     }
+
     .gig {
         margin: 20px 0;
     }
@@ -116,7 +140,7 @@
 }
 
 .giglist:not(.editing) .alignment-control {
-    display:none;
+    display: none;
 }
 
 .giglist button:hover {
@@ -160,11 +184,23 @@
 .gig {
     background-color: white;
     color: black;
-    overflow: hidden;
     position: relative;
     border: 2px solid gray;
     border-radius: 10px;
     box-shadow: 5px 5px lightgray;
+}
+
+.giglist:not(.strip) .gig {
+    overflow: hidden;
+}
+.giglist.strip {
+    position: relative;
+    max-width: 90%;
+}
+
+.giglist.strip > .gigs {
+    overflow: scroll;
+    scrollbar-width: none;
 }
 
 .gig input {
@@ -246,8 +282,8 @@ span.recurrence {
 }
 
 .gigpic {
-    position:relative; 
-    padding:0;
+    position: relative;
+    padding: 0;
     margin-top: -1px;
 }
 
@@ -255,10 +291,11 @@ span.recurrence {
     border-top: 1px solid lightgray;
     border-bottom: 1px solid lightgray;
 }
+
 .gigpic>.overlay {
-    position:absolute;
-    top:0;
-    left:0;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .gig-controls {
@@ -280,4 +317,57 @@ span.recurrence {
 
 pre {
     font-size: small;
+}
+
+/* Set this during clicked scroll in .horizontal .eventList.
+    But don't set while dragging - bad effect.
+*/
+.smoothie {
+    scroll-behavior: smooth;
+}
+
+@media (min-width: 700px) {
+    .sa_scrollButton {
+        font-size: 32px;
+        font-weight: bold;
+        position: absolute;
+        top: 90px;
+        width: 30px;
+        height: 60px;
+        color: rgb(80, 80, 80);
+        cursor: pointer;
+        /*border: 3px solid rgb(196, 196, 196);
+            box-shadow: 0 0 0 2px rgb(255,255,255);*/
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 0;
+        user-select: none;
+        text-align: center;
+        vertical-align: middle;
+        line-height: 60px;
+    }
+
+    .sa_scrollerLeft {
+        left: auto;
+        right: 0;
+        margin-right: -15px;
+    }
+
+    .sa_scrollerRight {
+        left: 0;
+        right: auto;
+        margin-left: -15px;
+    }
+
+    .sa_horizontal_activities {
+        position: relative;
+    }
+}
+
+@media (max-width: 700px) {
+    .sa_scrollButton {
+        display: none;
+    }
+    .giglist.strip .gigs > .gig:not(:first-child) {
+        display: none;
+    }
 }
