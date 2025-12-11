@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.5.2
+ * @version 1.7.1
  * @wordpress-plugin
  * 
  * Plugin Name: Gigiau Events Posters
@@ -11,8 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 1.5
- * TODO: srcset; upload - show progress; nth week, unmonthed
+ * Version: 1.7.1
  */
 
 /*
@@ -21,11 +20,10 @@
  While signed in, open the page and click "Add" (bottom right).
  Select one or more pictures; optionally set titles and put dates & info in the caption.
  One or two dates with month in the middle and 4-digit year. E.g.:
-     31/1/2026 - 2026-06-02 £4 book by text
+     Carol concert 31/1/2026 - 2026-02-14 £4 book by text
 
  Click Edit to adjust titles and dates.
 
- Sign out and look at the same page to see the posters.
  Posters will automatically disappear after their end date.
  Use Recur fields to make date automatically reset after end.
  */
@@ -74,7 +72,7 @@ function gigio_events_list_shortcode($attributes = [])
     extract(shortcode_atts(
         [
             'layout' => "shortdate image title dates venue", // order of appearance in each gig
-            'width' => 300,  // px width of images,
+            'width' => 0,  // px width of images,
             'height' => 0,   // px height of images - defaults to sqrt(2)*width
             'asIfDate' => null, // Display from this date - can also use URL ?asif=YYYY-MM-DD
             'category' => GIGIO_CATEGORY,
@@ -95,6 +93,9 @@ function gigio_events_list_shortcode($attributes = [])
     // If this is first time:
     $GIGIO_CATEGORY_id = wp_create_category($category_valid);
 
+    if ($strip && !$width) {
+        $width = 270;
+    }
     if ($width <= 30 || $width > 1000) {
         $width = 340;
     }
@@ -106,6 +107,7 @@ function gigio_events_list_shortcode($attributes = [])
     if ($strip && !$max) {
         $max = 10;
     }
+
 
     $layout_valid = validate_param($layout, "/[a-z ]{3,40}/", "shortdate image title dates venue");
     $background_valid = validate_param($background, "/^#[0-9a-fA-F]{6,8}$|^[-a-z]+$|^[a-z]+?\([0-9,]+\)$/", "whitesmoke");
@@ -515,6 +517,7 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
                     --pic-height: <?= $height ?>px;
                     --background: <?= $background ?? "whitesmoke" ?>;
                 }
+                
             </style>
             <?php if (current_user_can('edit_others_pages')) {  ?>
                 <script>
@@ -547,7 +550,7 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
             ?>
             <div class='gigs'>
             </div>
-            <?php if ($strip) {
+            <?php if (false && $strip) { // No scroll controls now
             ?>
                 <div class="sa_scrollButton sa_scrollerLeft">&nbsp;❱</div>
                 <div class="sa_scrollButton sa_scrollerRight">❰&nbsp;</div>

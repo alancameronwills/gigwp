@@ -15,7 +15,6 @@
     font-family: 'Roboto', sans-serif;
     font-weight: 400;
     font-size: 16px;
-    font-size: 1rem;
     line-height: 1.49;
 }
 
@@ -188,6 +187,7 @@
     border: 2px solid gray;
     border-radius: 10px;
     box-shadow: 5px 5px lightgray;
+    overflow: clip;
 }
 
 .giglist:not(.strip) .gig {
@@ -195,12 +195,16 @@
 }
 .giglist.strip {
     position: relative;
-    max-width: 90%;
+    max-width: 100%;
 }
 
 .giglist.strip > .gigs {
     overflow: scroll;
     scrollbar-width: none;
+}
+
+.giglist.strip>.controls {
+    display:none;
 }
 
 .gig input {
@@ -243,7 +247,7 @@
     outline: 1px solid red;
 }
 
-span.show-info {
+span.show-dates {
     text-wrap-mode: nowrap;
 }
 

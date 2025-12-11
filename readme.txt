@@ -46,6 +46,8 @@ Create whatever header and footer material you want to appear around the listing
 
 ## Add and Edit event listings
 
+On your events page,
+
 1 Click **Add** at the bottom right while
   - Signed into WordPress
   - Viewing your listings page (not editing it)
@@ -64,13 +66,24 @@ Create whatever header and footer material you want to appear around the listing
 **Booking** or **More info** link - once the other page is set up - for example a Facebook page - enter the URL. 
 Set the Booking Label to be "Book Tickets" or "Read more".
 
+## In your front page
 
+For an events list that takes up less vertical space, use:
+```
+    [gigiau strip=1]
+```
+This displays the next few upcoming events. 
+Use it as part of your home page, in addition to your main events page.
+
+You can't edit events with this option. 
+
+BTW, you can't put two [gigiau] shortcodes in the same page. Sorry.
 
 ## Global Options
 
 There are some options you can set in the `[gigiau]` shortcode. Click WordPress **Edit Page** to adjust them. For example:
 ```
-    [gigiau layout="title image dates venue" width="320" align="stretch" ]
+    [gigiau layout="title image dates venue" width="320" align="stretch" max="10"]
 ```
 
 * `layout="image booking title dates venue"` - Re-order the words to change the layout of each event
@@ -85,6 +98,7 @@ There are some options you can set in the `[gigiau]` shortcode. Click WordPress 
   * `columns` = aligned by columns - date order may be difficult to follow
 * `background="whitesmoke"` - a colour, such as `lightgray, gray, white, aliceblue, black, blue, ...` or `#CCFFAA`
 * `book="More info"` - The default label of the link button, such as "Book tickets". You can change it per event.
+* `max="10"` - maximum number of events to display. Default is 0, meaning no maximum.
 
 ## Event pages
 
@@ -92,3 +106,4 @@ Each event is recorded as a post in the WordPress database, with category `gig`.
 The picture associated with each event is set as the page's Feature Image.
 
 You can write content into an event's post, and link to it from the event listings.
+

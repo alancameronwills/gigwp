@@ -71,8 +71,8 @@ function addGig(event) {
  * Save event poster to WordPress
  * @param {string} title Title of event
  * @param {number} img Poster image ID
- * @param {YYY-MM-DD} dtstart 
- * @param {YYY-MM-DD} dtend 
+ * @param {YYYY-MM-DD} dtstart 
+ * @param {YYYY-MM-DD} dtend 
  * @param {string} dtinfo or venue
  * @returns void
  */
@@ -80,7 +80,7 @@ function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
     if (!window.gigiauCategoryId) return;
     threadFlag(1);
     const today = new Date().toISOString().substring(0, 10);
-    if (!dtstart || today.localeCompare(dtstart) > 0) {
+    if (!dtstart || !(today.localeCompare(dtstart) < 0)) {
         dtstart = today;
     }
 
@@ -247,13 +247,13 @@ function normalDate(yd, m, dy) {
  */
 function readDates(s) {
     const dg = "([0-9]+)[-\/ :.]+";
-    const ddgg = `^(?:${dg}${dg}${dg})?(?:${dg}${dg}${dg})?(.*)`;
+    const ddgg = `^(?:${dg}${dg}([0-9]+))(?:[-\/ :.]+${dg}${dg}${dg})?(.*)`;
     const re = new RegExp(ddgg);
     const c = (s.replace(/^[\s-]+/, "") + " ").match(re);
     let dg1 = normalDate(c[1], c[2], c[3]);
     let dg2 = normalDate(c[4], c[5], c[6]);
     if (!dg1) dg1 = new Date().toISOString().slice(0, 10);
-    if (dg1 && (!dg2 || dg1.localeCompare(dg2) > 0)) dg2 = dg1;
+    if (dg1 && (!dg2 || !(dg1.localeCompare(dg2) < 0))) dg2 = dg1;
     return [dg1, dg2, c[7].trim()];
 }
 
