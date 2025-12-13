@@ -118,7 +118,7 @@ function gigHtml(post) {
         }
         const nthString = nth.join(", ");
         const nthAndString = nthString.replace(/, ([^,]*)$/, " &amp; $1");
-        gigdates += ` <span class='recurrence'>every ${nthAndString} week</span>`;
+        gigdates += ` <span class='recurrence'>+ every ${nthAndString} week of month</span>`;
     }
     let bookbutton = "";
     if (post.meta.locallink || post.meta.bookinglink) {

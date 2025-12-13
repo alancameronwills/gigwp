@@ -1,20 +1,20 @@
 <?php
 
-/**
- * @package Gigiau Events Posters
- * @version 1.7.1
- * @wordpress-plugin
- * 
- * Plugin Name: Gigiau Events Posters
- * Plugin URI: https://gigiau.uk/gigio.zip
- * Description: Events listings based on posters. 
- * Author: Alan Cameron Wills
- * Developer: Alan Cameron Wills
- * Developer URI: https://gigiau.uk
- * Version: 1.7.1
- */
+    /**
+     * @package Gigiau Events Posters
+     * @version 1.7.3
+     * @wordpress-plugin
+     * 
+     * Plugin Name: Gigiau Events Posters
+     * Plugin URI: https://gigiau.uk/gigio.zip
+     * Description: Events listings based on posters. 
+     * Author: Alan Cameron Wills
+     * Developer: Alan Cameron Wills
+     * Developer URI: https://gigiau.uk
+     * Version: 1.7.3
+     */
 
-/*
+    /*
  Place shortcode [gigiau] in a page. 
 
  While signed in, open the page and click "Add" (bottom right).
@@ -28,8 +28,8 @@
  Use Recur fields to make date automatically reset after end.
  */
 
-// Requisites for category creation
-require_once(ABSPATH . 'wp-config.php');
+    // Requisites for category creation
+    require_once(ABSPATH . 'wp-config.php');
 require_once(ABSPATH . 'wp-includes/class-wpdb.php');
 require_once(ABSPATH . 'wp-admin/includes/taxonomy.php');
 
@@ -83,44 +83,44 @@ function gigio_events_list_shortcode($attributes = [])
             'strip' => false, // true -> single horizontal sliding row; false -> rows with wraparound
             'max' => 0, // max count of items; typically use with strip
             'background' => "whitesmoke",
+            'headercolor' => "#303030",
             'venueinfilename' => false // Poster filename format: Title YYYY-MM-DD[-YYYY-MM-DD] [Extra info | Venue]
         ],
         $attributes
     ));
 
-    $category_valid = validate_param($category, "/^[a-z]+$/", GIGIO_CATEGORY);
+    $valid_width = ($width && $width > 30 && $width < 1000 ? $width : ($strip ? 270 : 340));
+    $valid_height = ($height && $height > 30 && $height < 2000 ? $height : floor(1.42 * $valid_width));
+
+    $p = [
+        'layout' => validate_param($layout, "/[a-z ]{3,40}/", "shortdate image title dates venue"),
+        'width' => $valid_width,
+        'height' => $valid_height,
+        'fromDate' => validate_param($_GET['asif'] ?? $asIfDate, "/^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/", date('Y-m-d')),
+        'category' => validate_param($category, "/^[a-z]+$/", GIGIO_CATEGORY),
+        'popimages' => $popImages,
+        'venue' => $venue,
+        'book' => $book,
+        'strip' => $strip,
+        'max' => ($max && $max > 0 ? $max : ($strip ? 10 : 0)),
+        'align' => validate_param($_GET['align'] ?? get_option("gigioalignment",  $align), "/[-a-z]{1,20}/", "base"),
+        'background' => validate_param($background, "/^#[0-9a-fA-F]{6,8}$|^[-a-z]+$|^[a-z]+?\([0-9,]+\)$/", "whitesmoke"),
+        'headercolor' => validate_param($headercolor, "/^#?[a-zA-Z0-9]{3,24}$/", "#303030"),
+        'popImages' => $popImages,
+        'json' => $_GET['json'] ?? false,
+        'venueinfilename' => $venueinfilename
+    ];
 
     // If this is first time:
-    $GIGIO_CATEGORY_id = wp_create_category($category_valid);
+    $GIGIO_CATEGORY_id = wp_create_category($p['category']);
 
-    if ($strip && !$width) {
-        $width = 270;
-    }
-    if ($width <= 30 || $width > 1000) {
-        $width = 340;
-    }
-
-    if ($height <= 30 || $height > 2000) {
-        $height = floor(1.4214 * $width);
-    }
-
-    if ($strip && !$max) {
-        $max = 10;
-    }
-
-
-    $layout_valid = validate_param($layout, "/[a-z ]{3,40}/", "shortdate image title dates venue");
-    $background_valid = validate_param($background, "/^#[0-9a-fA-F]{6,8}$|^[-a-z]+$|^[a-z]+?\([0-9,]+\)$/", "whitesmoke");
-    $from_date_valid = validate_param($_GET['asif'] ?? $asIfDate, "/^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/", date('Y-m-d'));
-    $align_valid = validate_param($_GET['align'] ?? get_option("gigioalignment",  $align), "/[-a-z]{1,20}/", "base");
     if (current_user_can('edit_others_pages')) {
         if ($_GET['align'] ?? false) {
             update_option("gigioalignment", $align_valid);
         }
     }
 
-
-    return gigio_gig_list($from_date_valid, $category_valid, $width, $height, $align_valid, $background_valid, $popImages, $layout_valid, $_GET['json'] ?? false, $venue, $book, $venueinfilename, $strip, $max);
+    return gigio_gig_list($p);
 }
 
 function validate_param($param, $pattern, $default)
@@ -135,25 +135,25 @@ function validate_param($param, $pattern, $default)
 
 
 
-function gigio_gig_list($fromDate, $category, $width, $height, $align, $background, $popImages, $layout, $json, $defaultVenue, $DefaultBookButtonLabel, $venueInFilename, $strip, $max)
+function gigio_gig_list($p)
 {
-    $postDated = gigio_get_gigs_with_recurs($fromDate, $category);
-    if ($json == 2) {
+    $postDated = gigio_get_gigs_with_recurs($p['fromDate'], $p['category']);
+    if ($p['json'] == 2) {
         return "<pre id='gigiau'>\n" . json_encode($postDated, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
     $postIds = array_map(function ($item) {
         return $item->ID;
     }, $postDated);
-    $gigs = gigio_get_gigs($fromDate, $category, $postIds);
-    if ($json) {
+    $gigs = gigio_get_gigs($p['fromDate'], $p['category'], $postIds);
+    if ($p['json']) {
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
-    if ($max > 0) {
-        $gigs = array_slice($gigs, 0, $max);
+    if ($p['max'] > 0) {
+        $gigs = array_slice($gigs, 0, $p['max']);
     }
 
-    return gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel, $venueInFilename, $strip);
+    return gigio_gig_show($gigs, $p);
 }
 
 function gigio_get_gigs_with_recurs($fromDate, $category)
@@ -473,10 +473,10 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
  * @param (string) $layout Order in which to show the parts of each gig: "title image dates"
  * 
  */
-function gigio_gig_show($gigs, $width, $height, $align, $background, $category, $popImages, $layout, $defaultVenue, $fromDate, $DefaultBookButtonLabel, $venueInFilename, $strip)
+function gigio_gig_show($gigs, $p)
 {
     global $GIGIO_CATEGORY_id;
-    $alignClass = "align-$align";
+    $alignClass = "align-" . $p['align'];
     ob_start();
     // The JSON list of gigs is uploaded inline
     // The HTML template for each gig is also inline
@@ -486,7 +486,7 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
         <?= json_encode($gigs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK); ?>
     </script>
     <script id="gigtemplate" type="text/html">
-        <?= gigio_gig_template(current_user_can('edit_others_pages'), $layout, $defaultVenue) ?>
+        <?= gigio_gig_template(current_user_can('edit_others_pages'), $p['layout'], $p['venue']) ?>
     </script>
     <script>
         if (!customElements.get("gigio-capsule")) {
@@ -510,22 +510,22 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
     </script>
     <gigio-capsule>
         <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigio.css">
-        <div id="giglist" class="giglist <?= $alignClass ?> <?= $strip ? "strip" : "" ?>">
+        <div id="giglist" class="giglist <?= $alignClass ?> <?= $p['strip'] ? "strip" : "" ?>">
             <style>
                 #giglist {
-                    --pic-width: <?= $width ?>px;
-                    --pic-height: <?= $height ?>px;
-                    --background: <?= $background ?? "whitesmoke" ?>;
+                    --pic-width: <?= $p['width'] ?>px;
+                    --pic-height: <?= $p['height'] ?>px;
+                    --background: <?= $p['background'] ?>;
+                    --header-color: <?= $p['headercolor'] ?>;
                 }
-                
             </style>
             <?php if (current_user_can('edit_others_pages')) {  ?>
                 <script>
-                    window.gigWidth = <?= $width ?>;
+                    window.gigWidth = <?= $p['width'] ?>;
                     window.gigiauCategoryId = "<?= $GIGIO_CATEGORY_id ?>";
-                    window.gigiauCategory = "<?= $category ?>";
-                    window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $DefaultBookButtonLabel) ?>";
-                    window.gigiauVenueInFilename = "<?= !!$venueInFilename ?>";
+                    window.gigiauCategory = "<?= $p['category'] ?>";
+                    window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $p['book']) ?>";
+                    window.gigiauVenueInFilename = "<?= !!$p['venueinfilename'] ?>";
                 </script>
                 <div class='controls'>
                     <label class="alignment-control">
@@ -535,13 +535,13 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
                             <?php
                             foreach (["columns", "cover", "top", "base", "bottom"] as $option) {
                             ?>
-                                <option value='<?= $option ?>' <?= ($option == $align ? "selected" : "") ?>><?= $option ?></option>
+                                <option value='<?= $option ?>' <?= ($option == $p['align'] ? "selected" : "") ?>><?= $option ?></option>
                             <?php
                             }
                             ?>
                         </select>
                     </label>
-                    <label>Show as if on: <input type="date" value="<?= $fromDate ?>" oninput="setFromDate(this.value)" /></label>
+                    <label>Show as if on: <input type="date" value="<?= $p['fromDate'] ?>" oninput="setFromDate(this.value)" /></label>
                     <button id="addButton" title="add event posters" onclick='addGig(event)'>Add</button>
                     <button id="editButton" title="edit the event details" onclick='editGig(event)'>Edit</button>
                     <button id="helpButton" title="help" onclick='helpGigs(event)'>?</button>
@@ -550,7 +550,7 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
             ?>
             <div class='gigs'>
             </div>
-            <?php if (false && $strip) { // No scroll controls now
+            <?php if (false && $p['strip']) { // No scroll controls now
             ?>
                 <div class="sa_scrollButton sa_scrollerLeft">&nbsp;❱</div>
                 <div class="sa_scrollButton sa_scrollerRight">❰&nbsp;</div>
@@ -568,9 +568,9 @@ function gigio_gig_show($gigs, $width, $height, $align, $background, $category, 
         }
         jQuery(() => {
             window.gigioCapsuleRoot = document.querySelector("gigio-capsule").createShadow();
-            fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html(), <?= $strip ?>);
+            fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html(), <?= $p['strip'] ?>);
             <?php
-            if ($popImages) {
+            if ($p['popImages']) {
             ?>
                 gigioExpandImages();
             <?php

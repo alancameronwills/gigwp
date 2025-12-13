@@ -1,3 +1,12 @@
+.giglist {
+    --pic-width: 320px;
+    --pic-height: 440px;
+    --background: whitesmoke;
+    --header-color: #303030;
+    --header-text: white;
+}
+
+
 .giglist>.gigs .gig .gigpic>img.expand-image {
     width: 100vw;
     height: 100vh;
@@ -50,6 +59,11 @@
 .gigpic>img {
     width: var(--pic-width);
     max-width: 100%;
+    transition: all 0.3s;
+}
+
+.gigpic>img:hover {
+    transform: scale(1.01);
 }
 
 .gig>div {
@@ -184,27 +198,35 @@
     background-color: white;
     color: black;
     position: relative;
-    border: 2px solid gray;
-    border-radius: 10px;
+    /*border: 2px solid gray;*/
+    border-radius: 5px;
     box-shadow: 5px 5px lightgray;
     overflow: clip;
+}
+
+.gig>.prop-show:first-child {
+    font-weight: bold;
+    color: var(--header-text);
+    background-color: var(--header-color);
+    padding: 4px 10px;
 }
 
 .giglist:not(.strip) .gig {
     overflow: hidden;
 }
+
 .giglist.strip {
     position: relative;
     max-width: 100%;
 }
 
-.giglist.strip > .gigs {
+.giglist.strip>.gigs {
     overflow: scroll;
     scrollbar-width: none;
 }
 
 .giglist.strip>.controls {
-    display:none;
+    display: none;
 }
 
 .gig input {
@@ -263,9 +285,9 @@ span.recurrence {
 
 .gig .bookbutton {
     float: right;
-    background-color: black !important;
-    border: 1px solid blue;
-    color: white !important;
+    background-color: var(--header-color) !important;
+    border: 1px solid black;
+    color: var(--header-text) !important;
     border-radius: 2px;
     position: relative;
 }
@@ -277,8 +299,8 @@ span.recurrence {
     right: 2px;
     height: 10px;
     width: 10px;
-    border-top: 1px solid white;
-    border-right: 1px solid white;
+    border-top: 1px solid var(--header-text);
+    border-right: 1px solid var(--header-text);
 }
 
 .giglist.editing .bookbutton {
@@ -294,6 +316,7 @@ span.recurrence {
 .gigpic>img {
     border-top: 1px solid lightgray;
     border-bottom: 1px solid lightgray;
+    cursor: nesw-resize;
 }
 
 .gigpic>.overlay {
@@ -371,7 +394,8 @@ pre {
     .sa_scrollButton {
         display: none;
     }
-    .giglist.strip .gigs > .gig:not(:first-child) {
+
+    .giglist.strip .gigs>.gig:not(:first-child) {
         display: none;
     }
 }
