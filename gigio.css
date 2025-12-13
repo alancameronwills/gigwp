@@ -18,7 +18,9 @@
     background-color: black;
     object-fit: contain;
     z-index: 3000;
+    scale: 0.97;
 }
+
 
 .giglist {
     font-family: 'Roboto', sans-serif;
@@ -198,17 +200,19 @@
     background-color: white;
     color: black;
     position: relative;
-    /*border: 2px solid gray;*/
-    border-radius: 5px;
-    box-shadow: 5px 5px lightgray;
+    border: 1px solid black;
+    border-radius: 3px;
+    /* box-shadow: 5px 5px lightgray; */
     overflow: clip;
 }
 
-.gig>.prop-show:first-child {
-    font-weight: bold;
+.gig>.prop-show:first-child {font-weight: bold;
     color: var(--header-text);
     background-color: var(--header-color);
     padding: 4px 10px;
+    box-shadow: 0 1px var(--header-color);
+    z-index: 2;
+    position: relative;
 }
 
 .giglist:not(.strip) .gig {
@@ -267,10 +271,6 @@
 
 .invalid-field {
     outline: 1px solid red;
-}
-
-span.show-dates {
-    text-wrap-mode: nowrap;
 }
 
 span.recurrence {
