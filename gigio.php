@@ -2,7 +2,7 @@
 
     /**
      * @package Gigiau Events Posters
-     * @version 1.7.3
+     * @version 1.7.4
      * @wordpress-plugin
      * 
      * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
      * Author: Alan Cameron Wills
      * Developer: Alan Cameron Wills
      * Developer URI: https://gigiau.uk
-     * Version: 1.7.3
+     * Version: 1.7.4
      */
 
     /*

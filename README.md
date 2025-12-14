@@ -29,6 +29,11 @@ Create whatever header and footer material you want to appear around the listing
 
 **Publish** or **Save** the page and then **View Page**.
 
+**On your front page**, you could also put this to show just one row of the first few events:
+```
+      [gigiau strip=1]
+```
+
 
 ## Add and Edit event listings
 
@@ -43,14 +48,23 @@ Create whatever header and footer material you want to appear around the listing
 
 - Use the second date if your event extends over several days. The start date determines the ordering of the list; the expiry date determines when the event vanishes.
 - Use **extra info** for things like time of day, price or restrictions. There's only space for one line - leave the poster or linked page to say the rest.
-- **Location** might be a room or an external venue.
+- **Venue** might be a room or an external venue.
 
 **Recurrence** - check the nth week of the month boxes to make the event automatically reappear after each occurrence, until the end date if there is one. For example, for a series of 6 weekly classes, check all 5 week boxes, and set the start and end dates of the course. For a club that meets every 2nd and 4th week of the month, check those boxes and set the end date = the start date.
+Alternatively, set the **Every 14 days** option.
 
 **Booking** or **More info** link - once the other page is set up - for example a Facebook page - enter the URL. 
 Set the Booking Label to be "Book Tickets" or "Read more".
 
+**Link to Poster Page on this site** - check this if you want to put more detailed information or a booking form on this gig's own page. Once you've done editing the listings, click through to the gig page and add content to it.
 
+### Tip
+
+To make creating events a bit quicker, you can code the title, date, and extra info in the poster filename:
+```
+  The Big Show 2026-07-11 - 2026-07-13 Tickets on the door.jpg
+```
+Just save with that filename from your artwork app.
 
 ## Global Options
 
@@ -59,7 +73,14 @@ There are some options you can set in the `[gigiau]` shortcode. Click WordPress 
     [gigiau layout="title image dates venue" width="320" ]
 ```
 
-* `layout="image booking title dates venue"` - Re-order the words to change the layout of each event
+* `strip=1` - For use on your front page. Lists the first few events in a single row. You'll probably want to put a link to your events page underneath it, where people can see the full listing. 
+The admin buttons don't appear with this option.
+* `layout="shortdate image booking title dates venue"` - Re-order the words to change the layout of each event.
+  * `shortdate` - Just the start day and date
+  * `dates` - Start and end date, if the end date is different, followed by a description of the recurrence regime, if any; and then the extra info.
+  * `image`
+  * `title`
+  * `venue`
 * `align="columns"` - Layout of the list:
   * `top` - Events are in rows with tops aligned. Gaps below short posters.
   * `bottom` - Events are in rows with bottoms aligned. Gaps at tops.
@@ -76,5 +97,6 @@ There are some options you can set in the `[gigiau]` shortcode. Click WordPress 
 
 Each event is recorded as a post in the WordPress database, with category `gig`. You can see them in the lists of posts in the Admin pages.
 The picture associated with each event is set as the page's Feature Image.
+Dates, venue and recurrence are recorded as metadata.
 
 You can write content into an event's post, and link to it from the event listings.

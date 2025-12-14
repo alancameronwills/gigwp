@@ -201,11 +201,11 @@ function openMediaPopup() {
                         // Or in the filename, optionally with hyphens instead of spaces
                         const fileNameParts = img.title.match(/^(.*?)[ -]([- 0-9]{10}.*?)$/);
                         if (fileNameParts) {
-                            title = (fileNameParts[1] || "").replaceAll("-", " ");
+                            title = (fileNameParts[1] || "").replaceAll("-", " ").replace(";;", "|");
                             [dtstart, dtend, dtinfo] = readDates(fileNameParts[2]);
-                            dtinfo = dtinfo.replaceAll("-", " ");
+                            dtinfo = dtinfo.replaceAll("-", " ").replace(";;", "|");
                         } else {
-                            title = img.title;
+                            title = img.title.replace(";;", "|");
                         }
                     }
                 } catch (e) {
