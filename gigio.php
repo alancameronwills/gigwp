@@ -2,16 +2,16 @@
 
     /**
      * @package Gigiau Events Posters
-     * @version 1.7.4
+     * @version 1.7.5
      * @wordpress-plugin
-     * 
+     * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
      * Plugin Name: Gigiau Events Posters
      * Plugin URI: https://gigiau.uk/gigio.zip
      * Description: Events listings based on posters. 
      * Author: Alan Cameron Wills
      * Developer: Alan Cameron Wills
      * Developer URI: https://gigiau.uk
-     * Version: 1.7.4
+     * Version: 1.7.5
      */
 
     /*
@@ -40,10 +40,14 @@ $GIGIO_CATEGORY_id;
 // Our .js and .css files
 function gigio_nqscripts()
 {
+    $jsEditFile = plugin_dir_path(__FILE__) . "gigo-edit.js";
+    $jsEditModFime = filemtime($jsEditFile);
+    $jsFile = plugin_dir_path(__FILE__) . "gigio.js";
+    $jsModTime = filemtime($jsFile);
     if (current_user_can('edit_others_pages')) {
-        wp_enqueue_script("gigioeditjs", plugin_dir_url(__FILE__) . "gigio-edit.js", ["jquery-core"]);
+        wp_enqueue_script("gigioeditjs", plugin_dir_url(__FILE__) . "gigio-edit.js", ["jquery-core"], $jsEditModTime);
     }
-    wp_enqueue_script("gigiojs", plugin_dir_url(__FILE__) . 'gigio.js', ["jquery-core"]);
+    wp_enqueue_script("gigiojs", plugin_dir_url(__FILE__) . 'gigio.js', ["jquery-core"], $jsModTime);
     //wp_enqueue_style("gigiocss", plugin_dir_url(__FILE__) . 'gigio.css');
 }
 add_action('wp_enqueue_scripts', 'gigio_nqscripts');
@@ -509,7 +513,11 @@ function gigio_gig_show($gigs, $p)
         }
     </script>
     <gigio-capsule>
-        <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigio.css">
+        <?php 
+            $cssFile = plugin_dir_path(__FILE__) . "gigio.css";
+            $cssModTime = filemtime($cssFile);
+        ?>
+        <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigio.css?ver=<?= $cssModTime ?>">
         <div id="giglist" class="giglist <?= $alignClass ?> <?= $p['strip'] ? "strip" : "" ?>">
             <style>
                 #giglist {
