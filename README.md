@@ -81,6 +81,7 @@ The admin buttons don't appear with this option.
   * `image`
   * `title`
   * `venue`
+  * Descriptive content is always at the bottom
 * `align="columns"` - Layout of the list:
   * `top` - Events are in rows with tops aligned. Gaps below short posters.
   * `bottom` - Events are in rows with bottoms aligned. Gaps at tops.
@@ -92,6 +93,7 @@ The admin buttons don't appear with this option.
 * `border="false"` - to prevent a border round posters
 * `background="whitesmoke"` - a colour, such as `lightgray, gray, white, aliceblue, black, blue, ...` or `#CCFFAA`
 * `book="More info"` - The default label of the link button, such as "Book tickets". You can change it per event.
+* `headercolor="black"` - colour of the header of the event boxes
 
 ## Event pages
 
