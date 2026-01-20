@@ -399,3 +399,109 @@ pre {
         display: none;
     }
 }
+
+/* Gig content display */
+.gig-content-wrapper {
+    position: relative;
+}
+
+.gig-content-wrapper:has(.gig-content:empty) {
+    display: none;
+}
+
+.gig-content {
+    padding: 6px;
+    font-size: 0.9em;
+    color: #555;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: pre-line;
+    cursor: pointer;
+}
+
+.gig-content:empty {
+    display: none;
+}
+
+.gig-content-full {
+    display: none;
+    cursor: default;
+}
+
+.gig-content-full[data-locallink="true"] {
+    cursor: pointer;
+}
+
+.gig-content-wrapper.expanded .gig-content-full {
+    display: block;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px 4px 0 0;
+    padding: 12px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    font-size: 0.9em;
+    line-height: 1.5;
+    white-space: pre-line;
+}
+
+/* Show expanded content on hover for devices that support it */
+@media (hover: hover) {
+    .giglist:not(.editing) .gig-content-wrapper:hover .gig-content-full {
+        display: block;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 50vh;
+        overflow-y: auto;
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 4px 4px 0 0;
+        padding: 12px;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 100;
+        font-size: 0.9em;
+        line-height: 1.5;
+        white-space: pre-line;
+    }
+}
+
+.giglist.editing .gig-content-wrapper {
+    display: block !important;
+}
+
+.giglist.editing .gig-content {
+    cursor: pointer;
+    background-color: #f5f5f5;
+    border: 1px dashed #ccc;
+}
+
+.giglist.editing .gig-content:empty {
+    display: block;
+}
+
+.giglist.editing .gig-content:empty::before {
+    content: "Add description...";
+    color: #999;
+    font-style: italic;
+}
+
+.giglist.editing .gig-content:hover {
+    background-color: #e8f4fc;
+    border-color: #69c;
+}
+
+.giglist.editing .gig-content-full {
+    display: none !important;
+}

@@ -128,6 +128,20 @@ function gigHtml(post) {
         bookbutton = `<button class="bookbutton" onclick="gotolink('${link}')">${post.meta.booklabel || window.gigiauDefaultBookButtonLabel || "Book"}</button>`;
     }
     let template = jQuery("#gigtemplate").html();
+    // Strip HTML to get plain text content, preserving paragraph breaks as newlines
+    let contentText = "";
+    if (post.content) {
+        let html = post.content;
+        // Convert paragraph and line breaks to newlines before stripping HTML
+        html = html.replace(/<\/p>\s*<p[^>]*>/gi, "\n");
+        html = html.replace(/<br\s*\/?>/gi, "\n");
+        html = html.replace(/<\/p>/gi, "\n");
+        const tmp = document.createElement("div");
+        tmp.innerHTML = html;
+        contentText = tmp.textContent || tmp.innerText || "";
+        contentText = contentText.replace(/\n\s*\n/g, "\n").trim();
+    }
+
     let maps = {
         "gigid": post.id,
         "gigtitle": title,
@@ -137,7 +151,11 @@ function gigHtml(post) {
         "gigshortdate" : gigshortdate,
         "gigdtinfo": post.meta?.dtinfo || "",
         "bookbutton": bookbutton,
-        "venue": post.meta?.venue || ""
+        "venue": post.meta?.venue || "",
+        "gigcontenttext": contentText,
+        "gigeditlink": "",
+        "giglocallink": post.meta?.locallink ? "true" : "",
+        "giglink": post.link || ""
     };
 
     if (window.gigTemplateEditingMap) {
@@ -162,4 +180,74 @@ function friendlyDate(d = "", day = true) {
 }
 function gotolink(link) {
     window.open(link);
+}
+
+/**
+ * Handle click on shortened content
+ * - In editing mode: open WordPress editor
+ * - In viewing mode with locallink: open gig page in new tab
+ * - In viewing mode without locallink: toggle expanded content popup (non-hover devices only)
+ */
+function handleContentClick(element, event) {
+    event.stopPropagation();
+
+    // In editing mode, open WordPress editor
+    if (gigio(".giglist").classList.contains("editing")) {
+        if (window.openGigEditor) {
+            openGigEditor(element, event);
+        }
+        return;
+    }
+
+    // In viewing mode with locallink, open gig page
+    if (element.dataset.locallink === "true" && element.dataset.link) {
+        window.open(element.dataset.link, "_blank");
+        return;
+    }
+
+    // In viewing mode without locallink, toggle expanded content (for non-hover devices)
+    // On hover devices, the popup is shown via CSS :hover
+    const hasHover = window.matchMedia("(hover: hover)").matches;
+    if (hasHover) return;
+
+    const wrapper = element.closest(".gig-content-wrapper");
+
+    // Close any other expanded content
+    gigioa(".gig-content-wrapper.expanded").forEach(w => {
+        if (w !== wrapper) w.classList.remove("expanded");
+    });
+
+    wrapper.classList.toggle("expanded");
+}
+
+/**
+ * Handle click on expanded full content popup
+ * - If locallink is true, open gig page in new tab
+ * - Otherwise just stop propagation (keep popup open)
+ */
+function handleFullContentClick(element, event) {
+    event.stopPropagation();
+
+    if (element.dataset.locallink === "true" && element.dataset.link) {
+        window.open(element.dataset.link, "_blank");
+    }
+}
+
+/**
+ * Close expanded content when clicking outside
+ */
+function setupContentClickOutside() {
+    function closeExpanded(event) {
+        const expanded = gigio(".gig-content-wrapper.expanded");
+        if (!expanded) return;
+
+        // Check if click is inside the expanded full content
+        const fullContent = expanded.querySelector(".gig-content-full");
+        if (fullContent && fullContent.contains(event.target)) return;
+
+        expanded.classList.remove("expanded");
+    }
+
+    gigio().addEventListener("click", closeExpanded);
+    document.addEventListener("click", closeExpanded);
 }

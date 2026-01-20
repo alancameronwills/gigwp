@@ -285,11 +285,15 @@ function getGigData(gig) {
     let booklabel = inputValue(gig, ".gig-booklabel");
     let bookinglink = inputValue(gig, ".gig-bookinglink");
     let locallink = gig.querySelector(".gig-local-link")?.checked;
+    let link = gig.querySelector(".gig-content")?.dataset?.link || "";
+    let content = gig.querySelector(".gig-content-full")?.textContent || "";
 
     return {
         id: postid,
         title: title,
         pic: gigPic,
+        link: link,
+        content: content,
         meta: {
             dtstart: dtstart,
             dtend: dtend || dtstart,
@@ -472,6 +476,7 @@ function gigTemplateEditingMap(post, map) {
     map["booklabel"] = post.meta.booklabel || "";
     map["bookinglink"] = post.meta.bookinglink || "";
     map["locallink"] = post.meta.locallink ? "checked" : "";
+    map["gigeditlink"] = `/wp-admin/post.php?post=${post.id}&action=edit`;
 }
 
 /**
@@ -522,4 +527,16 @@ function setAlignment(alignment) {
 const locWithoutAlign = location.href.replace(/\?.*/, "");
 if (locWithoutAlign != location.href) {
     window.history.replaceState({}, "", locWithoutAlign);
+}
+
+/**
+ * Open WordPress post editor for a gig
+ * @param {HTMLElement} element - The .gig-content element
+ * @param {Event} event - Click event
+ */
+function openGigEditor(element, event) {
+    const editLink = element.dataset.editlink;
+    if (editLink) {
+        window.open(editLink, "_blank");
+    }
 }

@@ -462,6 +462,10 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
         <?php
         }
         ?>
+        <div class="gig-content-wrapper">
+            <div class="gig-content" onclick="handleContentClick(this, event)" data-editlink="%gigeditlink" data-locallink="%giglocallink" data-link="%giglink">%gigcontenttext</div>
+            <div class="gig-content-full" onclick="handleFullContentClick(this, event)" data-locallink="%giglocallink" data-link="%giglink">%gigcontenttext</div>
+        </div>
     </div>
 <?php
     return ob_get_clean();
@@ -577,6 +581,7 @@ function gigio_gig_show($gigs, $p)
         jQuery(() => {
             window.gigioCapsuleRoot = document.querySelector("gigio-capsule").createShadow();
             fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html(), <?= $p['strip'] ?>);
+            setupContentClickOutside();
             <?php
             if ($p['popImages']) {
             ?>
