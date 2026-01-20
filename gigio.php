@@ -87,7 +87,7 @@ function gigio_events_list_shortcode($attributes = [])
             'strip' => false, // true -> single horizontal sliding row; false -> rows with wraparound
             'max' => 0, // max count of items; typically use with strip
             'background' => "whitesmoke",
-            'headercolor' => "#303030",
+            'headercolor' => "#101060",
             'venueinfilename' => false // Poster filename format: Title YYYY-MM-DD[-YYYY-MM-DD] [Extra info | Venue]
         ],
         $attributes

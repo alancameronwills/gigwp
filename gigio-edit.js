@@ -426,7 +426,9 @@ gigUpdateHandlers.push(gig => {
             if (data && gig.savedData != JSON.stringify(data)) {
                 validate(data, gig.savedData ? JSON.parse(gig.savedData) : "");
                 //console.log("change " + JSON.stringify(data));
-                const post = new wp.api.models.Post(data);
+                // Exclude content from save - it's only edited in WP post editor
+                const { content, ...saveData } = data;
+                const post = new wp.api.models.Post(saveData);
                 threadFlag(1);
                 post.save().done(post => { // ?? doesn't work with await?
                     threadFlag(-1);
