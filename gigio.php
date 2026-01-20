@@ -1,20 +1,20 @@
 <?php
 
-    /**
-     * @package Gigiau Events Posters
-     * @version 1.7.5
-     * @wordpress-plugin
-     * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
-     * Plugin Name: Gigiau Events Posters
-     * Plugin URI: https://gigiau.uk/gigio.zip
-     * Description: Events listings based on posters. 
-     * Author: Alan Cameron Wills
-     * Developer: Alan Cameron Wills
-     * Developer URI: https://gigiau.uk
-     * Version: 1.7.5
-     */
+/**
+ * @package Gigiau Events Posters
+ * @version 1.8
+ * @wordpress-plugin
+ * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
+ * Plugin Name: Gigiau Events Posters
+ * Plugin URI: https://gigiau.uk/gigio.zip
+ * Description: Events listings based on posters. 
+ * Author: Alan Cameron Wills
+ * Developer: Alan Cameron Wills
+ * Developer URI: https://gigiau.uk
+ * Version: 1.8
+ */
 
-    /*
+/*
  Place shortcode [gigiau] in a page. 
 
  While signed in, open the page and click "Add" (bottom right).
@@ -28,8 +28,8 @@
  Use Recur fields to make date automatically reset after end.
  */
 
-    // Requisites for category creation
-    require_once(ABSPATH . 'wp-config.php');
+// Requisites for category creation
+require_once(ABSPATH . 'wp-config.php');
 require_once(ABSPATH . 'wp-includes/class-wpdb.php');
 require_once(ABSPATH . 'wp-admin/includes/taxonomy.php');
 
@@ -40,8 +40,8 @@ $GIGIO_CATEGORY_id;
 // Our .js and .css files
 function gigio_nqscripts()
 {
-    $jsEditFile = plugin_dir_path(__FILE__) . "gigo-edit.js";
-    $jsEditModFime = filemtime($jsEditFile);
+    $jsEditFile = plugin_dir_path(__FILE__) . "gigio-edit.js";
+    $jsEditModTime = filemtime($jsEditFile);
     $jsFile = plugin_dir_path(__FILE__) . "gigio.js";
     $jsModTime = filemtime($jsFile);
     if (current_user_can('edit_others_pages')) {
@@ -513,9 +513,9 @@ function gigio_gig_show($gigs, $p)
         }
     </script>
     <gigio-capsule>
-        <?php 
-            $cssFile = plugin_dir_path(__FILE__) . "gigio.css";
-            $cssModTime = filemtime($cssFile);
+        <?php
+        $cssFile = plugin_dir_path(__FILE__) . "gigio.css";
+        $cssModTime = filemtime($cssFile);
         ?>
         <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigio.css?ver=<?= $cssModTime ?>">
         <div id="giglist" class="giglist <?= $alignClass ?> <?= $p['strip'] ? "strip" : "" ?>">
