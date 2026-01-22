@@ -18,7 +18,7 @@ function gigioExpandImages() {
                 gigio().expandedImage = null;
             }
         }
-    })
+    });
 }
 
 // **** Scroll horizontal strip
@@ -118,7 +118,7 @@ function gigHtml(post) {
         }
         const nthString = nth.join(" + ");
         //const nthAndString = nthString.replace(/, ([^,]*)$/, " &amp; $1");
-        gigdates += ` <span class='recurrence'>+ every ${nthString} week ${nthString ? "of month" : ""}</span>`;
+        gigdates += ` <span class='recurrence'>+ every ${nthString} week ${nthString ? "of month" : ""}</span><br/>`;
     }
     let bookbutton = "";
     if (post.meta.locallink || post.meta.bookinglink) {
