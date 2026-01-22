@@ -116,9 +116,9 @@ function gigHtml(post) {
                 nth.push(cardinals[1 * weeks.charAt(i) - 1]);
             }
         }
-        const nthString = nth.join(", ");
-        const nthAndString = nthString.replace(/, ([^,]*)$/, " &amp; $1");
-        gigdates += ` <span class='recurrence'>+ every ${nthAndString} week of month</span>`;
+        const nthString = nth.join(" + ");
+        //const nthAndString = nthString.replace(/, ([^,]*)$/, " &amp; $1");
+        gigdates += ` <span class='recurrence'>+ every ${nthString} week ${nthString ? "of month" : ""}</span>`;
     }
     let bookbutton = "";
     if (post.meta.locallink || post.meta.bookinglink) {
