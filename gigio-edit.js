@@ -407,8 +407,8 @@ gigUpdateHandlers.push(gig => {
             }
         }
         let rweekscount = gig.querySelectorAll(".gig-recursweek input:checked").length;
-        if (rweekscount>0) {
-                gig.querySelector(".gig-r14d").checked = false;
+        if (rweekscount > 0) {
+            gig.querySelector(".gig-r14d").checked = false;
         }
         setGigFormColours(gig);
     });
@@ -478,7 +478,7 @@ function gigTemplateEditingMap(post, map) {
     map["booklabel"] = post.meta.booklabel || "";
     map["bookinglink"] = post.meta.bookinglink || "";
     map["locallink"] = post.meta.locallink ? "checked" : "";
-    map["gigeditlink"] = `/wp-admin/post.php?post=${post.id}&action=edit`;
+    map["gigeditlink"] = `${userSettings?.url || ""}/wp-admin/post.php?post=${post.id}&action=edit`.replace("//", "/");
 }
 
 /**
@@ -540,5 +540,10 @@ function openGigEditor(element, event) {
     const editLink = element.dataset.editlink;
     if (editLink) {
         window.open(editLink, "_blank");
+        // Refresh on return to this window
+        window.addEventListener("focus", function (event) {
+            window.location.reload();
+            return false;
+        }, false);
     }
 }
