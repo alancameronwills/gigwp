@@ -37,26 +37,32 @@ Create whatever header and footer material you want to appear around the listing
 
 ## Add and Edit event listings
 
-1 Click **Add** at the bottom right while
-  - Signed into WordPress
-  - Viewing your listings page (not editing it)
+0 Sign in to WordPress and *view* your listings page - **don't** edit it.
+
+1 Click **Add** at the bottom right.
   The Media Selector opens.
 
-2. **Upload** and select your event poster images. Use CTRL|CMD to select several at once.
+2. **Upload** and select your event poster images. You can use CTRL|CMD to select several at once.
+
+2. Click **Edit** at bottom right to 
 
 3. Edit the **title**, **date**, **extra info** and other fields, then click **Done**.
 
 - Use the second date if your event extends over several days. The start date determines the ordering of the list; the expiry date determines when the event vanishes.
-- Use **extra info** for things like time of day, price or restrictions. There's only space for one line - leave the poster or linked page to say the rest.
+- Use **extra info** for things like time of day, price or restrictions. There's only space for one line - if your poster doesn't say enough, you can add more text using *Add description...* (see below)
 - **Venue** might be a room or an external venue.
 
 **Recurrence** - check the nth week of the month boxes to make the event automatically reappear after each occurrence, until the end date if there is one. For example, for a series of 6 weekly classes, check all 5 week boxes, and set the start and end dates of the course. For a club that meets every 2nd and 4th week of the month, check those boxes and set the end date = the start date.
 Alternatively, set the **Every 14 days** option.
 
-**Booking** or **More info** link - once the other page is set up - for example a Facebook page - enter the URL. 
+**Booking** or **More info** link - once the other page is set up - for example a Facebook page - enter the URL (https://...)
 Set the Booking Label to be "Book Tickets" or "Read more".
 
-**Link to Poster Page on this site** - check this if you want to put more detailed information or a booking form on this gig's own page. Once you've done editing the listings, click through to the gig page and add content to it.
+**Link to Poster Page on this site** - check this if you want users to be able to click through to the gig's own page on your site. You'd use this if you want to show more pictures, or a lot more text. You'd also use it if you want to put a booking or enquiry form on your own site, rather than using an external tickets service.
+
+**Add description...** - click this to add more text, pictures, etc in the gig's own page. When you've finished editing, click **Save**, and then close the editing window.
+
+When people view your events page, they'll see some of this description at the bottom of each event. Tapping or clicking it will reveal more.
 
 ### Tip
 
