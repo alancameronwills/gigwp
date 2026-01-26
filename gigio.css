@@ -242,7 +242,9 @@
     width: 8em;
 }
 
-
+.gig .emoji {
+    height: 1em;
+}
 
 .gig>div {
     padding: 0 6px;
