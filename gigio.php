@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.8
+ * @version 1.8.1
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters

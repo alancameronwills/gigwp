@@ -24,8 +24,8 @@ function gigioExpandImages() {
 // **** Scroll horizontal strip
 
 function scrollStripHandler() {
-    gigioa(".sa_scrollButton").forEach(i=>i.addEventListener("click", (function(e) {
-        let direction = this.className.indexOf("sa_scrollerLeft")>=0 ? 1 : -1;
+    gigioa(".sa_scrollButton").forEach(i => i.addEventListener("click", (function (e) {
+        let direction = this.className.indexOf("sa_scrollerLeft") >= 0 ? 1 : -1;
         let gigs = jQuery(this).parent().children(".gigs")[0];
         if (gigs) kickSideways(gigs, direction);
     })));
@@ -47,7 +47,7 @@ function scrollStripHandler() {
  * On loading the page, show the content
  * @param {json} gigListJson 
  */
-function fillGigList(gigListJson, strip=false) {
+function fillGigList(gigListJson, strip = false) {
     const gigList = JSON.parse(gigListJson);
     let gigListHtml = gigList.map(gig => gigHtml(gig)).join("\n");
     gigio(".giglist>.gigs").innerHTML = gigListHtml;
@@ -95,78 +95,82 @@ function rearrangeGigsByColumns(event) {
  * @returns HTML string
  */
 function gigHtml(post) {
-    const title = (post.title?.rendered || post.title).replaceAll(/</g, "&lt;");
-    const imgLink = post.thumbnail_image || post.pic || "/?p=" + post.featured_media;
-    const imgElement = `<div class="gigpic" style="position:relative;padding:0;">`
-        + (post.smallpic ? `<img src="${post.smallpic}"  title="poster: ${title}"/>` : "")
-        + `<img class="full ${post.smallpic ? 'overlay' : ''}" src="${post.pic}" title="poster: ${title}"/>
+    try {
+        const title = ("" + (post.title?.rendered || post.title)).replaceAll(/</g, "&lt;");
+        const imgLink = post.thumbnail_image || post.pic || "/?p=" + post.featured_media;
+        const imgElement = `<div class="gigpic" style="position:relative;padding:0;">`
+            + (post.smallpic ? `<img src="${post.smallpic}"  title="poster: ${title}"/>` : "")
+            + `<img class="full ${post.smallpic ? 'overlay' : ''}" src="${post.pic}" title="poster: ${title}"/>
 		</div>`;
-    let gigdates = friendlyDate(post.meta.dtstart) +
-        (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
-    if (post.meta.recursfortnight) {
-        gigdates += " <span class='recurrence'>every 14 days</span>";
-    }
-    let gigshortdate =  friendlyDate(post.meta.dtstart);
-    if (post.meta.recursweeks) {
-        const weeks = "" + post.meta.recursweeks; // cast from number
-        let nth = [];
-        if (weeks != "12345") {
-            const cardinals = ['1st', '2nd', '3rd', '4th', 'last'];
-            for (let i = 0; i < weeks.length; i++) {
-                nth.push(cardinals[1 * weeks.charAt(i) - 1]);
-            }
+        let gigdates = friendlyDate(post.meta.dtstart) +
+            (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
+        if (post.meta.recursfortnight) {
+            gigdates += " <span class='recurrence'>every 14 days</span>";
         }
-        const nthString = nth.join(" + ");
-        //const nthAndString = nthString.replace(/, ([^,]*)$/, " &amp; $1");
-        gigdates += ` <span class='recurrence'>+ every ${nthString} week ${nthString ? "of month" : ""}</span><br/>`;
-    }
-    let bookbutton = "";
-    if (post.meta.locallink || post.meta.bookinglink) {
-        const link = post.meta.locallink
-            ? post.link || "./?p=" + post.id
-            : post.meta.bookinglink;
-        bookbutton = `<button class="bookbutton" onclick="gotolink('${link}')">${post.meta.booklabel || window.gigiauDefaultBookButtonLabel || "Book"}</button>`;
-    }
-    let template = jQuery("#gigtemplate").html();
-    // Strip HTML to get plain text content, preserving paragraph breaks as newlines
-    let contentText = "";
-    if (post.content) {
-        let html = post.content;
-        // Convert paragraph and line breaks to newlines before stripping HTML
-        html = html.replace(/<\/p>\s*<p[^>]*>/gi, "\n");
-        html = html.replace(/<br\s*\/?>/gi, "\n");
-        html = html.replace(/<\/p>/gi, "\n");
-        const tmp = document.createElement("div");
-        tmp.innerHTML = html;
-        contentText = tmp.textContent || tmp.innerText || "";
-        contentText = contentText.replace(/\n\s*\n/g, "\n").trim();
-    }
+        let gigshortdate = friendlyDate(post.meta.dtstart);
+        if (post.meta.recursweeks) {
+            const weeks = "" + post.meta.recursweeks; // cast from number
+            let nth = [];
+            if (weeks != "12345") {
+                const cardinals = ['1st', '2nd', '3rd', '4th', 'last'];
+                for (let i = 0; i < weeks.length; i++) {
+                    nth.push(cardinals[1 * weeks.charAt(i) - 1]);
+                }
+            }
+            const nthString = nth.join(" + ");
+            //const nthAndString = nthString.replace(/, ([^,]*)$/, " &amp; $1");
+            gigdates += ` <span class='recurrence'>+ every ${nthString} week ${nthString ? "of month" : ""}</span><br/>`;
+        }
+        let bookbutton = "";
+        if (post.meta.locallink || post.meta.bookinglink) {
+            const link = post.meta.locallink
+                ? post.link || "./?p=" + post.id
+                : post.meta.bookinglink;
+            bookbutton = `<button class="bookbutton" onclick="gotolink('${link}')">${post.meta.booklabel || window.gigiauDefaultBookButtonLabel || "Book"}</button>`;
+        }
+        let template = jQuery("#gigtemplate").html();
+        // Strip HTML to get plain text content, preserving paragraph breaks as newlines
+        let contentText = "";
+        if (post.content) {
+            let html = post.content;
+            // Convert paragraph and line breaks to newlines before stripping HTML
+            html = html.replace(/<\/p>\s*<p[^>]*>/gi, "\n");
+            html = html.replace(/<br\s*\/?>/gi, "\n");
+            html = html.replace(/<\/p>/gi, "\n");
+            const tmp = document.createElement("div");
+            tmp.innerHTML = html;
+            contentText = tmp.textContent || tmp.innerText || "";
+            contentText = contentText.replace(/\n\s*\n/g, "\n").trim();
+        }
 
-    let maps = {
-        "gigid": post.id,
-        "gigtitle": title,
-        "gigpic": imgLink,
-        "gigimg": imgElement,
-        "gigdates": gigdates,
-        "gigshortdate" : gigshortdate,
-        "gigdtinfo": post.meta?.dtinfo || "",
-        "bookbutton": bookbutton,
-        "venue": post.meta?.venue || "",
-        "gigcontenttext": contentText,
-        "gigeditlink": "",
-        "giglocallink": post.meta?.locallink ? "true" : "",
-        "giglink": post.link || ""
-    };
+        let maps = {
+            "gigid": post.id,
+            "gigtitle": title,
+            "gigpic": imgLink,
+            "gigimg": imgElement,
+            "gigdates": gigdates,
+            "gigshortdate": gigshortdate,
+            "gigdtinfo": post.meta?.dtinfo || "",
+            "bookbutton": bookbutton,
+            "venue": post.meta?.venue || "",
+            "gigcontenttext": contentText,
+            "gigeditlink": "",
+            "giglocallink": post.meta?.locallink ? "true" : "",
+            "giglink": post.link || ""
+        };
 
-    if (window.gigTemplateEditingMap) {
-        gigTemplateEditingMap(post, maps);
+        if (window.gigTemplateEditingMap) {
+            gigTemplateEditingMap(post, maps);
+        }
+
+        let show = template;
+        Object.getOwnPropertyNames(maps).forEach(v => {
+            show = show.replaceAll(`%${v}`, maps[v]);
+        });
+        return show.trim();
+    } catch (e) {
+        return "-";
     }
-
-    let show = template;
-    Object.getOwnPropertyNames(maps).forEach(v => {
-        show = show.replaceAll(`%${v}`, maps[v]);
-    });
-    return show.trim();
 }
 
 function friendlyDate(d = "", day = true) {
