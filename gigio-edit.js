@@ -101,11 +101,18 @@ function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
         }
     };
     // Parameter from shortcode:
-    if (window.gigiauVenueInFilename) {
-        query.meta.venue = dtinfo;
+    const m = dtinfo.match(/^([^=£]*)=?(.*)$/);
+    if (m) {
+        query.meta.venue = m[1];
+        query.meta.dtinfo = m[2] || "";
     } else {
-        query.meta.dtinfo = dtinfo;
+        if (window.gigiauVenueInFilename) {
+            query.meta.venue = dtinfo;
+        } else {
+            query.meta.dtinfo = dtinfo;
+        }
     }
+
 
     // https://developer.wordpress.org/rest-api/using-the-rest-api/backbone-javascript-client/
     const post = new wp.api.models.Post(query);
@@ -198,18 +205,11 @@ function openMediaPopup() {
                         title = img.title;
                         [dtstart, dtend, dtinfo] = readDates(img.caption);
                     } else {
-                        // Or in the filename, optionally with hyphens instead of spaces
-                        const fileNameParts = img.title.match(/^(.*?)[ -]([- 0-9]{10}.*?)$/);
-                        if (fileNameParts) {
-                            title = (fileNameParts[1] || "").replaceAll("-", " ").replace(";;", "|");
-                            [dtstart, dtend, dtinfo] = readDates(fileNameParts[2]);
-                            dtinfo = dtinfo.replaceAll("-", " ").replace(";;", "|");
-                        } else {
-                            title = img.title.replace(";;", "|");
-                        }
+                        // Or in the filename: title YYYY-MM-DD [YYYY-MM-DD] [HH-MM] [info]
+                        [title, dtstart, dtend, dtinfo] = parseFN(img.title);
                     }
                 } catch (e) {
-                    console.log("Reading dates from caption: ", e);
+                    console.log("Reading dates from filename or caption: ", e);
                 }
                 newPost(title, img.id, dtstart, dtend, dtinfo);
             });
@@ -224,7 +224,7 @@ function openMediaPopup() {
  * @returns Two-digit string
  */
 function d2(g) {
-    return ("0" + g.trim()).slice(-2);
+    return g ? ("0" + g.trim()).slice(-2) : "00";
 }
 
 function normalDate(yd, m, dy) {
@@ -240,21 +240,53 @@ function normalDate(yd, m, dy) {
 }
 
 /**
- * Parse two dates and a comment.
- * Dates are 3 groups of digits, month in middle, no time, separated by [-/:. ]
- * @param {String} s : [Date1] [Date2] [text] 
- * @returns [Date1, Date2, text]
+ * Parse two dates, a time, and a comment.
+ * Dates are 3 groups of digits, month in middle, separated by [-/:.]
+ * Time is 2 groups of digits separated by [-/:.]
+ * @param {String} s : [Date1] [Date2] [time] [text] 
+ * @returns [Date1 time, Date2, text]
  */
 function readDates(s) {
-    const dg = "([0-9]+)[-\/ :.]+";
-    const ddgg = `^(?:${dg}${dg}([0-9]+))(?:[-\/ :.]+${dg}${dg}${dg})?(.*)`;
+    const dg = "([0-9]+)[-\/:.]+";
+    const dge = "([0-9]+)";
+    const ddgg = `^(?:${dg}${dg}${dge})(?:[-\/ :.]+${dg}${dg}${dge})?(.*)`;
     const re = new RegExp(ddgg);
     const c = (s.replace(/^[\s-]+/, "") + " ").match(re);
+    if (!c) return ["", "", s];
     let dg1 = normalDate(c[1], c[2], c[3]);
     let dg2 = normalDate(c[4], c[5], c[6]);
     if (!dg1) dg1 = new Date().toISOString().slice(0, 10);
     if (dg1 && (!dg2 || !(dg1.localeCompare(dg2) < 0))) dg2 = dg1;
-    return [dg1, dg2, c[7].trim()];
+    let remainder = c[7].trim();
+    let r = remainder.match(new RegExp(`^[- ]*(?:${dg}${dge})?(.*)`));
+    if (r && r[1]) {
+        dg1 += ` ${d2(r[1])}:${d2(r[2])}`;
+        remainder = r[3].trim();
+    }
+    return [dg1, dg2, remainder];
+}
+
+function parseFN(fn) {
+    let dtstart = dtend = dtinfo = "";
+    let title = "" + Date.now();
+
+
+    const dateAndInfo = fn.match(/[0-9][- 0-9]{9}.*?$/);
+    if (!dateAndInfo) {
+        title = fn;
+    } else {
+        [dtstart, dtend, dtinfo] = readDates(dateAndInfo[0]);
+        dtinfo = dtinfo.replace("¬", "|");
+        if (dateAndInfo.index == 0) {
+            title = dtinfo;
+            dtinfo = "";
+        } else {
+            title = fn.substring(0, dateAndInfo.index);
+        }
+    }
+    title = title.replace("¬", "|").trim();
+
+    return [title, dtstart, dtend, dtinfo];
 }
 
 function getGigData(gig) {
@@ -470,7 +502,8 @@ function gigTemplateEditingMap(post, map) {
     let gigfortnightoption = `<input class='gig-r14d' type='checkbox' id='gig-r14d-${post.id}' name='gig-r14d-${post.id}' ${post.meta.recursfortnight ? " checked" : ""} />`;
 
     map["gigdtstart"] = post.meta.dtstart || "";
-    map["gigdtend"] = post.meta.dtend || "";
+    map["gigdtype"] = post.meta.dtstart.length > 10 ? "datetime-local" : "date";
+    map["gigdtend"] = (post.meta.dtend || "").substring(0, 10);
     map["gigdayoptions"] = gigdayoptions;
     map["gigweekoptions"] = gigweekoptions;
     map["gigfortnightoption"] = gigfortnightoption;

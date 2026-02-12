@@ -68,9 +68,16 @@ When people view your events page, they'll see some of this description at the b
 
 To make creating events a bit quicker, you can code the title, date, and extra info in the poster filename:
 ```
-  The Big Show 2026-07-11 - 2026-07-13 Tickets on the door.jpg
+  The Big Show 2026-07-11 - 2026-07-13 19-30 Tickets on the door.jpg
 ```
 Just save with that filename from your artwork app.
+
+You can also set the venue after the date and time, by including `=`
+```
+  The Big Show 2026-07-11 - 2026-07-13 19-30 Main Theatre = £15 or kids £5.jpg
+  Parade 2026-07-11 14-00 Central Park = bring umbrellas.jpg
+  Chill session 2026-07-12 17-00 Garden Room =.jpg
+```
 
 ## Global Options
 
@@ -100,6 +107,7 @@ The admin buttons don't appear with this option.
 * `background="whitesmoke"` - a colour, such as `lightgray, gray, white, aliceblue, black, blue, ...` or `#CCFFAA`
 * `book="More info"` - The default label of the link button, such as "Book tickets". You can change it per event.
 * `headercolor="black"` - colour of the header of the event boxes
+* `venueinfilename=1` - If there is no `=` in an image filename, text after the date will set the venue instead of the extra info
 
 ## Event pages
 

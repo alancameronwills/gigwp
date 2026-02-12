@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.8.1
+ * @version 1.9
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 1.8.1
+ * Version: 1.9
  */
 
 /*
@@ -19,8 +19,8 @@
 
  While signed in, open the page and click "Add" (bottom right).
  Select one or more pictures; optionally set titles and put dates & info in the caption.
- One or two dates with month in the middle and 4-digit year. E.g.:
-     Carol concert 31/1/2026 - 2026-02-14 £4 book by text
+ One or two dates with month in the middle and 4-digit year, followed by time and other info. E.g.:
+     Carol concerts 31-1-2026 2026-02-14 19-30 Nevern Church = £4 book by text
 
  Click Edit to adjust titles and dates.
 
@@ -406,8 +406,8 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
         if ($isSignedIn) {
             ?>
             <div class="prop-edit" style="display:none">
-                <div>
-                    <input class="gig-dtstart gig-field" type="date" value="%gigdtstart"
+                <div> 
+                    <input class="gig-dtstart gig-field" type="%gigdtype" value="%gigdtstart"
                         title="Start date" />
                     <span class="gig-dtend-group"> <span class="datedash">&mdash;</span>
                         <input class="gig-dtend gig-field" type="date" value="%gigdtend"

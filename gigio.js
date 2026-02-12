@@ -179,8 +179,9 @@ function friendlyDate(d = "", day = true) {
     if (day) {
         options['weekday'] = 'short';
     }
-    Object.assign(options, { 'day': 'numeric', 'month': 'short', 'year': 'numeric' });
-    return new Date(d).toLocaleDateString(undefined, options);
+    Object.assign(options, { 'day': 'numeric', 'month': 'short', 'year': 'numeric', hour:"2-digit", minute:"2-digit" });
+    let dateAndTime = new Date(d).toLocaleDateString(undefined, options);
+    return dateAndTime.replace(", 00:00", "");
 }
 function gotolink(link) {
     window.open(link);
