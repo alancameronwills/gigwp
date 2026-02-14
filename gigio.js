@@ -103,7 +103,7 @@ function gigHtml(post) {
             + `<img class="full ${post.smallpic ? 'overlay' : ''}" src="${post.pic}" title="poster: ${title}"/>
 		</div>`;
         let gigdates = friendlyDate(post.meta.dtstart) +
-            (post.meta.dtstart == post.meta.dtend ? "" : " - " + friendlyDate(post.meta.dtend, false));
+            (post.meta.dtstart.substring(0,10) == post.meta.dtend.substring(0,10) ? "" : " - " + friendlyDate(post.meta.dtend, false));
         if (post.meta.recursfortnight) {
             gigdates += " <span class='recurrence'>every 14 days</span>";
         }
