@@ -181,7 +181,7 @@ function friendlyDate(d = "", day = true) {
     }
     Object.assign(options, { 'day': 'numeric', 'month': 'short', 'year': 'numeric', hour:"2-digit", minute:"2-digit" });
     let dateAndTime = new Date(d).toLocaleDateString(undefined, options);
-    return dateAndTime.replace(", 00:00", "");
+    return dateAndTime.replace(", 00:00", "").replace(", 01:00", ""); // GMT or BST midnight
 }
 function gotolink(link) {
     window.open(link);

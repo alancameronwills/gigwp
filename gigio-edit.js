@@ -342,9 +342,9 @@ function getGigData(gig) {
 };
 
 function validate(data, savedData) {
-    if (data.meta?.dtstart && (data.meta.dtstart?.localeCompare(data.meta?.dtend || "") || 0) > 0) {
+    if (data.meta?.dtstart && (data.meta.dtstart?.substring(0,10)?.localeCompare(data.meta?.dtend || "") || 0) > 0) {
         // dtend < dtstart
-        const diff = new Date(savedData?.meta?.dtend || 0) - new Date(savedData?.meta?.dtstart || 0);
+        const diff = new Date(savedData?.meta?.dtend || 0) - new Date(savedData?.meta?.dtstart?.substring(0,10) || 0);
         const fixedDtend = new Date(data.meta.dtstart).valueOf() + Math.max(0, diff);
         data.meta.dtend = new Date(fixedDtend).toISOString().substring(0, 10);
     }
@@ -416,10 +416,10 @@ gigUpdateHandlers.push(gig => {
         if (e.target.classList.contains("gig-dtstart")) {
             let saved = JSON.parse(gig.savedData || "");
             let dtend = gig.querySelector(".gig-dtend");
-            if (saved && saved.meta.dtend == saved.meta.dtstart ||
+            if (saved && saved.meta.dtend == saved.meta.dtstart.substring(0,10) ||
                 dtend.value.localeCompare(e.target.value) < 0
             ) {
-                dtend.value = e.target.value;
+                dtend.value = e.target.value.substring(0,10);
             }
         }
         if (e.target.classList.contains("gig-r14d")) {
@@ -501,8 +501,8 @@ function gigTemplateEditingMap(post, map) {
         }).join("");
     let gigfortnightoption = `<input class='gig-r14d' type='checkbox' id='gig-r14d-${post.id}' name='gig-r14d-${post.id}' ${post.meta.recursfortnight ? " checked" : ""} />`;
 
-    map["gigdtstart"] = post.meta.dtstart || "";
-    map["gigdtype"] = post.meta.dtstart.length > 10 ? "datetime-local" : "date";
+    map["gigdtstart"] = new Date(post.meta.dtstart).toISOString().substring(0,16); // post.meta.dtstart || "";
+    map["gigdtype"] =  "datetime-local" ; //post.meta.dtstart.length > 10 ? "datetime-local" : "date";
     map["gigdtend"] = (post.meta.dtend || "").substring(0, 10);
     map["gigdayoptions"] = gigdayoptions;
     map["gigweekoptions"] = gigweekoptions;
