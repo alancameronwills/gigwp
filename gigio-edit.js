@@ -501,7 +501,9 @@ function gigTemplateEditingMap(post, map) {
         }).join("");
     let gigfortnightoption = `<input class='gig-r14d' type='checkbox' id='gig-r14d-${post.id}' name='gig-r14d-${post.id}' ${post.meta.recursfortnight ? " checked" : ""} />`;
 
-    map["gigdtstart"] = new Date(post.meta.dtstart).toISOString().substring(0,16); // post.meta.dtstart || "";
+    let dtstart = new Date(post.meta.dtstart);
+    let dtstartLocal = new Date(dtstart.getTime() - dtstart.getTimezoneOffset()*60000);
+    map["gigdtstart"] = dtstartLocal.toISOString().substring(0,16);
     map["gigdtype"] =  "datetime-local" ; //post.meta.dtstart.length > 10 ? "datetime-local" : "date";
     map["gigdtend"] = (post.meta.dtend || "").substring(0, 10);
     map["gigdayoptions"] = gigdayoptions;
