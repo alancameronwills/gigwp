@@ -43,10 +43,32 @@ Get-ChildItem -Path $pluginRoot -Force | Where-Object {
     Copy-Item -Path $_.FullName -Destination $stageDir -Recurse -Force
 }
 
-# Zip the staged folder so the slug-named directory sits at the top of the
-# archive. This is what WP uses as the install directory on manual upload,
-# making re-installs overwrite the existing plugin cleanly.
-Compress-Archive -Path $stageDir -DestinationPath $zipPath -Force
+# Build the zip entry-by-entry with explicit forward-slash entry names.
+# Both Compress-Archive and ZipFile.CreateFromDirectory on Windows PowerShell
+# 5.1 / .NET Framework write entries with backslash separators, which
+# violates the ZIP spec. Linux unzip (and WordPress on Linux hosts) then
+# treats the archive as a single oddly-named file, causing "Plugin file
+# does not exist" on activation.
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive = [System.IO.Compression.ZipFile]::Open(
+    $zipPath, [System.IO.Compression.ZipArchiveMode]::Create
+)
+try {
+    $stagePrefix = (Resolve-Path $stageDir).Path
+    Get-ChildItem -Path $stageDir -Recurse -File | ForEach-Object {
+        $relative = $_.FullName.Substring($stagePrefix.Length).TrimStart('\','/')
+        $entryName = "$pluginSlug/" + ($relative -replace '\\', '/')
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+            $archive,
+            $_.FullName,
+            $entryName,
+            [System.IO.Compression.CompressionLevel]::Optimal
+        ) | Out-Null
+    }
+} finally {
+    $archive.Dispose()
+}
 Remove-Item -Recurse -Force $stageDir
 
 Write-Host ""
