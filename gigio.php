@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 1.9
+ * @version 2.0
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 1.9
+ * Version: 2.0
  */
 
 /*
@@ -406,7 +406,7 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
         if ($isSignedIn) {
             ?>
             <div class="prop-edit" style="display:none">
-                <div> 
+                <div>
                     <input class="gig-dtstart gig-field" type="%gigdtype" value="%gigdtstart"
                         title="Start date" />
                     <span class="gig-dtend-group"> <span class="datedash">&mdash;</span>
@@ -496,80 +496,61 @@ function gigio_gig_show($gigs, $p)
     <script id="gigtemplate" type="text/html">
         <?= gigio_gig_template(current_user_can('edit_others_pages'), $p['layout'], $p['venue']) ?>
     </script>
-    <script>
-        if (!customElements.get("gigio-capsule")) {
-            customElements.define("gigio-capsule", class extends HTMLElement {
-                constructor() {
-                    super();
-                    this.attachShadow({
-                        mode: "open"
-                    });
-                }
-                plus(element) {
-                    this.shadowRoot.appendChild(element);
-                }
-                createShadow() {
-                    // Move explicit subtree into shadow
-                    Array.from(this.children).forEach(element => this.plus(element));
-                    return this.shadowRoot;
-                }
-            });
-        }
-    </script>
-    <gigio-capsule>
+
+    <div class="gigio-capsule">
         <?php
         $cssFile = plugin_dir_path(__FILE__) . "gigio.css";
         $cssModTime = filemtime($cssFile);
         ?>
         <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigio.css?ver=<?= $cssModTime ?>">
-        <div id="giglist" class="giglist <?= $alignClass ?> <?= $p['strip'] ? "strip" : "" ?>">
-            <style>
-                #giglist {
-                    --pic-width: <?= $p['width'] ?>px;
-                    --pic-height: <?= $p['height'] ?>px;
-                    --background: <?= $p['background'] ?>;
-                    --header-color: <?= $p['headercolor'] ?>;
-                }
-            </style>
-            <?php if (current_user_can('edit_others_pages')) {  ?>
-                <script>
-                    window.gigWidth = <?= $p['width'] ?>;
-                    window.gigiauCategoryId = "<?= $GIGIO_CATEGORY_id ?>";
-                    window.gigiauCategory = "<?= $p['category'] ?>";
-                    window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $p['book']) ?>";
-                    window.gigiauVenueInFilename = "<?= !!$p['venueinfilename'] ?>";
-                </script>
-                <div class='controls'>
-                    <label class="alignment-control">
-                        Alignment:
-                        <select onchange="setAlignment(this.value)">
-                            <option value="">(default)</option>
-                            <?php
-                            foreach (["columns", "cover", "top", "base", "bottom"] as $option) {
-                            ?>
-                                <option value='<?= $option ?>' <?= ($option == $p['align'] ? "selected" : "") ?>><?= $option ?></option>
-                            <?php
-                            }
-                            ?>
-                        </select>
-                    </label>
-                    <label>Show as if on: <input type="date" value="<?= $p['fromDate'] ?>" oninput="setFromDate(this.value)" /></label>
-                    <button id="addButton" title="add event posters" onclick='addGig(event)'>Add</button>
-                    <button id="editButton" title="edit the event details" onclick='editGig(event)'>Edit</button>
-                    <button id="helpButton" title="help" onclick='helpGigs(event)'>?</button>
-                </div>
-            <?php }
-            ?>
-            <div class='gigs'>
+        <div id="giglist" class="giglist <?= $alignClass ?> <?= $p['strip'] ? "strip" : "" ?>" />
+        <style>
+            #giglist {
+                --pic-width: <?= $p['width'] ?>px;
+                --pic-height: <?= $p['height'] ?>px;
+                --background: <?= $p['background'] ?>;
+                --header-color: <?= $p['headercolor'] ?>;
+            }
+        </style>
+        <?php if (current_user_can('edit_others_pages')) {  ?>
+            <script>
+                window.gigWidth = <?= $p['width'] ?>;
+                window.gigiauCategoryId = "<?= $GIGIO_CATEGORY_id ?>";
+                window.gigiauCategory = "<?= $p['category'] ?>";
+                window.gigiauDefaultBookButtonLabel = "<?= str_replace('"', '', $p['book']) ?>";
+                window.gigiauVenueInFilename = "<?= !!$p['venueinfilename'] ?>";
+            </script>
+            <div class='controls'>
+                <label class="alignment-control">
+                    Alignment:
+                    <select onchange="setAlignment(this.value)">
+                        <option value="">(default)</option>
+                        <?php
+                        foreach (["columns", "cover", "top", "base", "bottom"] as $option) {
+                        ?>
+                            <option value='<?= $option ?>' <?= ($option == $p['align'] ? "selected" : "") ?>><?= $option ?></option>
+                        <?php
+                        }
+                        ?>
+                    </select>
+                </label>
+                <label>Show as if on: <input type="date" value="<?= $p['fromDate'] ?>" oninput="setFromDate(this.value)" /></label>
+                <button id="addButton" title="add event posters" onclick='addGig(event)'>Add</button>
+                <button id="editButton" title="edit the event details" onclick='editGig(event)'>Edit</button>
+                <button id="helpButton" title="help" onclick='helpGigs(event)'>?</button>
             </div>
-            <?php if (false && $p['strip']) { // No scroll controls now
-            ?>
-                <div class="sa_scrollButton sa_scrollerLeft">&nbsp;❱</div>
-                <div class="sa_scrollButton sa_scrollerRight">❰&nbsp;</div>
-            <?php }
-            ?>
+        <?php }
+        ?>
+        <div class='gigs'>
         </div>
-    </gigio-capsule>
+        <?php if (false && $p['strip']) { // No scroll controls now
+        ?>
+            <div class="sa_scrollButton sa_scrollerLeft">&nbsp;❱</div>
+            <div class="sa_scrollButton sa_scrollerRight">❰&nbsp;</div>
+        <?php }
+        ?>
+    </div>
+
     <script>
         function gigio(selector) {
             return selector ? window.gigioCapsuleRoot.querySelector(selector) : window.gigioCapsuleRoot;
@@ -579,16 +560,25 @@ function gigio_gig_show($gigs, $p)
             return window.gigioCapsuleRoot.querySelectorAll(selector);
         }
         jQuery(() => {
-            window.gigioCapsuleRoot = document.querySelector("gigio-capsule").createShadow();
-            fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html(), <?= $p['strip'] ?>);
-            setupContentClickOutside();
-            <?php
-            if ($p['popImages']) {
-            ?>
-                gigioExpandImages();
-            <?php
-            }
-            ?>
+            setTimeout(() => {
+                let capsule = document.querySelector(".gigio-capsule");
+                capsule.attachShadow({
+                    mode: "open"
+                });
+                let a = Array.from(capsule.children);
+                console.log("capsule " + a.length);
+                a.forEach(element => capsule.shadowRoot.appendChild(element));
+                window.gigioCapsuleRoot = capsule.shadowRoot;
+                fillGigList(jQuery("#gig-json").text(), jQuery("#gigtemplate").html(), <?= $p['strip'] ?>);
+                setupContentClickOutside();
+                <?php
+                if ($p['popImages']) {
+                ?>
+                    gigioExpandImages();
+                <?php
+                }
+                ?>
+            }, 100);
         })
     </script>
 <?php
