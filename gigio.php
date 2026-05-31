@@ -28,6 +28,16 @@
  Use Recur fields to make date automatically reset after end.
  */
 
+// Auto-update from GitHub releases
+require __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
+$gigioUpdateChecker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+    'https://github.com/alancameronwills/gigwp/',
+    __FILE__,
+    'gigiau-events-posters'
+);
+$gigioUpdateChecker->setBranch('main');
+$gigioUpdateChecker->getVcsApi()->enableReleaseAssets();
+
 // Requisites for category creation
 require_once(ABSPATH . 'wp-config.php');
 require_once(ABSPATH . 'wp-includes/class-wpdb.php');

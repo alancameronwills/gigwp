@@ -19,7 +19,7 @@ Gigiau Events Posters is a WordPress plugin that displays event posters on a lis
 2. Recurrence logic updates dates for recurring events server-side
 3. Gig data serialized to JSON inline in page
 4. JavaScript parses JSON and renders HTML from inline template
-5. Shadow DOM (`<gigio-capsule>`) encapsulates styles from theme conflicts
+5. Shadow DOM (`class="gigio-capsule"`) encapsulates styles from theme conflicts
 
 ### Key Patterns
 - **Shortcode**: `[gigiau]` with parameters like `layout`, `width`, `height`, `strip`, `align`, `background`
