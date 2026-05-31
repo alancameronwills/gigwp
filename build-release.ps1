@@ -19,7 +19,7 @@ if (-not $versionLine) {
 $version = $versionLine.Matches[0].Groups[1].Value.Trim()
 
 $buildDir = Join-Path $pluginRoot 'build'
-$stageDir = Join-Path $buildDir 'stage'
+$stageDir = Join-Path $buildDir $pluginSlug
 $zipPath  = Join-Path $buildDir "$pluginSlug-$version.zip"
 
 # Things that should never go into a release zip.
@@ -43,9 +43,10 @@ Get-ChildItem -Path $pluginRoot -Force | Where-Object {
     Copy-Item -Path $_.FullName -Destination $stageDir -Recurse -Force
 }
 
-# Zip the contents of the staged folder so files sit at the root of the zip
-# (no wrapping directory).
-Compress-Archive -Path (Join-Path $stageDir '*') -DestinationPath $zipPath -Force
+# Zip the staged folder so the slug-named directory sits at the top of the
+# archive. This is what WP uses as the install directory on manual upload,
+# making re-installs overwrite the existing plugin cleanly.
+Compress-Archive -Path $stageDir -DestinationPath $zipPath -Force
 Remove-Item -Recurse -Force $stageDir
 
 Write-Host ""
