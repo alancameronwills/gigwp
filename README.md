@@ -122,7 +122,8 @@ GET /wp-json/gigiau/v1/events
 Public. Returns the id, title, and start date-time of every event from today
 onwards, sorted by start date. Recurring events show their next occurrence.
 The `start` value is ISO 8601: events with a time include the site's timezone
-offset; all-day events are returned as a plain date.
+offset; all-day events are returned as a plain date. Titles are returned as
+plain text with HTML entities decoded.
 
 ```json
 [
