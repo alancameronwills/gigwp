@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.5
+ * @version 2.6
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.5
+ * Version: 2.6
  */
 
 /*
@@ -754,10 +754,16 @@ function gigio_rest_add_event($request)
     }
     $venue = trim((string) $request->get_param('venue'));
 
+    // The site database may store post_title as utf8mb3/latin1, which rejects
+    // raw multi-byte characters. Encode anything above ASCII to numeric HTML
+    // entities (e.g. "–" -> "&#8211;") so it stores safely; the GET endpoint
+    // decodes titles back to plain text, keeping the round-trip symmetric.
+    $title_stored = mb_encode_numericentity($title, [0x80, 0x10FFFF, 0, 0xFFFFFF], 'UTF-8');
+
     $category_id = wp_create_category(GIGIO_CATEGORY);
 
     $post_id = wp_insert_post([
-        'post_title'    => $title,
+        'post_title'    => $title_stored,
         'post_content'  => '',
         'post_status'   => 'publish',
         'post_type'     => 'post',
