@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.2
+ * @version 2.4
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.2
+ * Version: 2.4
  */
 
 /*
@@ -614,3 +614,195 @@ add_action("rest_insert_post", function ($post, $request, $creating) {
         }
     }
 }, 10, 3);
+
+
+// ************ Public Events REST API ***********
+//
+// A small, purpose-built API in the `gigiau/v1` namespace, separate from the
+// admin editing that goes through WordPress's built-in /wp/v2/posts endpoints.
+//
+//   GET  /wp-json/gigiau/v1/events
+//        Public. Lists title and start date-time of every event from today
+//        onwards (recurring events show their next occurrence).
+//
+//   POST /wp-json/gigiau/v1/events
+//        Requires a signed-in user who can create posts. Adds one event from
+//        a title, start/end dates, venue, and an uploaded poster image
+//        (multipart/form-data field `picture`). The linked description page is
+//        not set here.
+
+add_action('rest_api_init', function () {
+    register_rest_route('gigiau/v1', '/events', [
+        [
+            'methods'             => 'GET',
+            'callback'            => 'gigio_rest_list_events',
+            'permission_callback' => '__return_true', // events are already shown publicly
+        ],
+        [
+            'methods'             => 'POST',
+            'callback'            => 'gigio_rest_add_event',
+            'permission_callback' => function () {
+                return current_user_can('edit_others_posts');
+            },
+            'args' => [
+                'title' => [
+                    'type'     => 'string',
+                    'required' => true,
+                ],
+                'dtstart' => [
+                    'type'        => 'string',
+                    'required'    => false,
+                    'description' => 'Start date YYYY-MM-DD, optionally with time (YYYY-MM-DD HH:MM). Defaults to today.',
+                ],
+                'dtend' => [
+                    'type'        => 'string',
+                    'required'    => false,
+                    'description' => 'End (expiry) date YYYY-MM-DD. Defaults to the start date.',
+                ],
+                'venue' => [
+                    'type'     => 'string',
+                    'required' => false,
+                ],
+            ],
+        ],
+    ]);
+});
+
+/**
+ * Convert a stored dtstart/dtend value to an ISO 8601 string.
+ * Handles the variants found in the data: "YYYY-MM-DDTHH:MM", "YYYY-MM-DD HH:MM",
+ * and date-only "YYYY-MM-DD". Dates are interpreted in the site's timezone.
+ * A date-only value stays date-only; a value with a time becomes a full
+ * offset datetime (e.g. 2026-07-03T19:30:00+01:00). Unparseable input is
+ * returned unchanged.
+ */
+function gigio_iso_datetime($value)
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '';
+    }
+    try {
+        $dt = new DateTime($value, wp_timezone());
+    } catch (Exception $e) {
+        return $value;
+    }
+    // No time component in the source -> keep it as an ISO date.
+    if (!preg_match('/\d{1,2}:\d{2}/', $value)) {
+        return $dt->format('Y-m-d');
+    }
+    return $dt->format('c');
+}
+
+/**
+ * GET /wp-json/gigiau/v1/events
+ * Return the title and start date-time of every current/future event,
+ * sorted by start date, with recurring events resolved to their next date.
+ */
+function gigio_rest_list_events($request)
+{
+    $fromDate = date('Y-m-d');
+    $category = GIGIO_CATEGORY;
+
+    // Make sure the category exists (mirrors the shortcode's first-run behaviour).
+    wp_create_category($category);
+
+    $postDated = gigio_get_gigs_with_recurs($fromDate, $category);
+    $postIds = array_map(function ($item) {
+        return $item->ID;
+    }, $postDated);
+
+    if (count($postIds) == 0) {
+        return rest_ensure_response([]);
+    }
+
+    // gigio_get_gigs applies recurrence date-shifting and sorts by start date.
+    $gigs = gigio_get_gigs($fromDate, $category, $postIds);
+
+    $events = array_map(function ($gig) {
+        return [
+            'id'    => $gig['id'],
+            'title' => $gig['title'],
+            'start' => gigio_iso_datetime($gig['meta']['dtstart'] ?? ''),
+        ];
+    }, $gigs);
+
+    return rest_ensure_response(array_values($events));
+}
+
+/**
+ * POST /wp-json/gigiau/v1/events
+ * Create one event post from title, dates, venue, and an uploaded poster.
+ */
+function gigio_rest_add_event($request)
+{
+    $title = trim((string) $request->get_param('title'));
+    if ($title === '') {
+        return new WP_Error('gigio_missing_title', 'A title is required.', ['status' => 400]);
+    }
+
+    // Normalise dates the same way the admin JS (newPost) does:
+    // start defaults to today if missing or in the past; end defaults to start.
+    $today = date('Y-m-d');
+    $dtstart = trim((string) $request->get_param('dtstart'));
+    if ($dtstart === '' || strcmp(substr($dtstart, 0, 10), $today) < 0) {
+        $dtstart = $today;
+    }
+    $dtend = trim((string) $request->get_param('dtend'));
+    if ($dtend === '' || strcmp(substr($dtend, 0, 10), substr($dtstart, 0, 10)) < 0) {
+        $dtend = substr($dtstart, 0, 10);
+    }
+    $venue = trim((string) $request->get_param('venue'));
+
+    $category_id = wp_create_category(GIGIO_CATEGORY);
+
+    $post_id = wp_insert_post([
+        'post_title'    => $title,
+        'post_content'  => '',
+        'post_status'   => 'publish',
+        'post_type'     => 'post',
+        'post_category' => [$category_id],
+    ], true);
+
+    if (is_wp_error($post_id)) {
+        return $post_id;
+    }
+
+    update_post_meta($post_id, 'dtstart', $dtstart);
+    update_post_meta($post_id, 'dtend', $dtend);
+    update_post_meta($post_id, 'venue', $venue);
+    update_post_meta($post_id, 'recursday', 0);
+
+    // Attach the uploaded poster (multipart/form-data field `picture`) as the
+    // featured image.
+    $files = $request->get_file_params();
+    if (!empty($files['picture']) && !empty($files['picture']['tmp_name'])) {
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+
+        $attachment_id = media_handle_upload('picture', $post_id);
+        if (is_wp_error($attachment_id)) {
+            // Roll back the post so we don't leave a picture-less event behind.
+            wp_delete_post($post_id, true);
+            return new WP_Error(
+                'gigio_upload_failed',
+                'Poster upload failed: ' . $attachment_id->get_error_message(),
+                ['status' => 400]
+            );
+        }
+        set_post_thumbnail($post_id, $attachment_id);
+    }
+
+    $response = rest_ensure_response([
+        'id'      => $post_id,
+        'title'   => get_the_title($post_id),
+        'start'   => gigio_iso_datetime($dtstart),
+        'end'     => $dtend,
+        'venue'   => $venue,
+        'picture' => get_the_post_thumbnail_url($post_id, 'full') ?: null,
+        'link'    => get_permalink($post_id),
+    ]);
+    $response->set_status(201);
+    return $response;
+}

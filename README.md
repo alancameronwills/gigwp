@@ -109,6 +109,65 @@ The admin buttons don't appear with this option.
 * `headercolor="black"` - colour of the header of the event boxes
 * `venueinfilename=1` - If there is no `=` in an image filename, text after the date will set the venue instead of the extra info
 
+## API
+
+A small REST API lives under `gigiau/v1`.
+
+### List events
+
+```
+GET /wp-json/gigiau/v1/events
+```
+
+Public. Returns the id, title, and start date-time of every event from today
+onwards, sorted by start date. Recurring events show their next occurrence.
+The `start` value is ISO 8601: events with a time include the site's timezone
+offset; all-day events are returned as a plain date.
+
+```json
+[
+  { "id": 42, "title": "The Big Show", "start": "2026-08-01T19:30:00+01:00" },
+  { "id": 57, "title": "Parade",       "start": "2026-08-11" }
+]
+```
+
+### Add an event
+
+```
+POST /wp-json/gigiau/v1/events
+Content-Type: multipart/form-data
+```
+
+Requires an authenticated user who can create posts (use an
+[Application Password](https://make.wordpress.org/core/2020/11/05/application-passwords-integration-guide/)
+or a logged-in session with a REST nonce).
+
+Fields:
+
+| Field     | Required | Notes                                                          |
+|-----------|----------|----------------------------------------------------------------|
+| `title`   | yes      | Event title                                                    |
+| `dtstart` | no       | `YYYY-MM-DD`, optionally with time `YYYY-MM-DD HH:MM`. Defaults to today; a past date is bumped to today. |
+| `dtend`   | no       | `YYYY-MM-DD` expiry date. Defaults to the start date.          |
+| `venue`   | no       | Venue name                                                     |
+| `picture` | no       | The poster image, uploaded as a file. Set as the featured image. |
+
+Example with `curl`:
+
+```
+curl -u username:application-password \
+  -F title="The Big Show" \
+  -F dtstart="2026-08-01 19:30" \
+  -F dtend="2026-08-02" \
+  -F venue="Main Hall" \
+  -F picture=@poster.jpg \
+  https://your-site.example/wp-json/gigiau/v1/events
+```
+
+Returns `201` with the created event, including its `picture` URL and `link`.
+The linked description page (extra text and pictures) is not set by the API —
+add that through the WordPress post editor if needed.
+
 ## Event pages
 
 Each event is recorded as a post in the WordPress database, with category `gig`. You can see them in the lists of posts in the Admin pages.
