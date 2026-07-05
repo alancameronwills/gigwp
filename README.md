@@ -151,6 +151,8 @@ Fields:
 | `dtstart` | no       | `YYYY-MM-DD`, optionally with time `YYYY-MM-DD HH:MM`. Defaults to today; a past date is bumped to today. |
 | `dtend`   | no       | `YYYY-MM-DD` expiry date. Defaults to the start date.          |
 | `venue`   | no       | Venue name                                                     |
+| `dtinfo`  | no       | Extra date/time info shown on the poster (e.g. time, price)    |
+| `bookinglink` | no   | URL for booking/tickets or more info (`https://...`)          |
 | `picture` | no       | The poster image, uploaded as a file. Set as the featured image. |
 
 Example with `curl`:
@@ -161,6 +163,8 @@ curl -u username:application-password \
   -F dtstart="2026-08-01 19:30" \
   -F dtend="2026-08-02" \
   -F venue="Main Hall" \
+  -F dtinfo="Doors 7pm, £15" \
+  -F bookinglink="https://tickets.example/big-show" \
   -F picture=@poster.jpg \
   https://your-site.example/wp-json/gigiau/v1/events
 ```

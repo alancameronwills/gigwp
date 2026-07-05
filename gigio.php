@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.6
+ * @version 2.7
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.6
+ * Version: 2.7
  */
 
 /*
@@ -627,9 +627,9 @@ add_action("rest_insert_post", function ($post, $request, $creating) {
 //
 //   POST /wp-json/gigiau/v1/events
 //        Requires a signed-in user who can create posts. Adds one event from
-//        a title, start/end dates, venue, and an uploaded poster image
-//        (multipart/form-data field `picture`). The linked description page is
-//        not set here.
+//        a title, start/end dates, venue, extra date info (dtinfo), a booking
+//        link (bookinglink), and an uploaded poster image (multipart/form-data
+//        field `picture`). The linked description page is not set here.
 
 add_action('rest_api_init', function () {
     register_rest_route('gigiau/v1', '/events', [
@@ -662,6 +662,16 @@ add_action('rest_api_init', function () {
                 'venue' => [
                     'type'     => 'string',
                     'required' => false,
+                ],
+                'dtinfo' => [
+                    'type'        => 'string',
+                    'required'    => false,
+                    'description' => 'Extra free-text date/time info shown on the poster.',
+                ],
+                'bookinglink' => [
+                    'type'        => 'string',
+                    'required'    => false,
+                    'description' => 'URL for booking/tickets.',
                 ],
             ],
         ],
@@ -753,6 +763,8 @@ function gigio_rest_add_event($request)
         $dtend = substr($dtstart, 0, 10);
     }
     $venue = trim((string) $request->get_param('venue'));
+    $dtinfo = trim((string) $request->get_param('dtinfo'));
+    $bookinglink = trim((string) $request->get_param('bookinglink'));
 
     // The site database may store post_title as utf8mb3/latin1, which rejects
     // raw multi-byte characters. Encode anything above ASCII to numeric HTML
@@ -777,6 +789,8 @@ function gigio_rest_add_event($request)
     update_post_meta($post_id, 'dtstart', $dtstart);
     update_post_meta($post_id, 'dtend', $dtend);
     update_post_meta($post_id, 'venue', $venue);
+    update_post_meta($post_id, 'dtinfo', $dtinfo);
+    update_post_meta($post_id, 'bookinglink', $bookinglink);
     update_post_meta($post_id, 'recursday', 0);
 
     // Attach the uploaded poster (multipart/form-data field `picture`) as the
@@ -806,6 +820,8 @@ function gigio_rest_add_event($request)
         'start'   => gigio_iso_datetime($dtstart),
         'end'     => $dtend,
         'venue'   => $venue,
+        'dtinfo'  => $dtinfo,
+        'bookinglink' => $bookinglink,
         'picture' => get_the_post_thumbnail_url($post_id, 'full') ?: null,
         'link'    => get_permalink($post_id),
     ]);
