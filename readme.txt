@@ -65,6 +65,26 @@ On your events page,
 **Booking** or **More info** link - once the other page is set up - for example a Facebook page - enter the URL. 
 Set the Booking Label to be "Book Tickets" or "Read more".
 
+## Submitting events (for event organizers)
+
+You can let event organizers add their own events without giving them WordPress accounts. Every submission is held for your approval before it appears publicly.
+
+**Set it up:** put this shortcode on a page (for example a page called "Submit an Event"):
+```
+    [gigiau_submit]
+```
+
+**Organizers use it like this:**
+
+1. On that page they create an account with an **email and password** (this is separate from WordPress sign-in) and sign in.
+2. They fill in the **title**, **date and time**, and choose a **venue** from the drop-down of names already in use, or add a new one.
+3. They upload a **poster** image and submit.
+4. They can see the events they've submitted and **edit** them at any time.
+
+**Approving submissions:** a submitted event does not appear on your public listings page, and is left out of any export, until you approve it. Signed in to WordPress as an admin, open your `[gigiau]` listings page: submitted events show there with a red **Awaiting approval** flag and an **Approve** button. Click **Approve** to publish it. If an organizer edits an event you already approved, it goes back to awaiting approval so you can re-check it.
+
+**Dates:** an organizer's start date may be in the past only if the end date is today or later (for an event that is already running). Otherwise a current date is required.
+
 ## In your front page
 
 For an events list that takes up less vertical space, use:
