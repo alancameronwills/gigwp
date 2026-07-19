@@ -36,12 +36,14 @@ Gigiau Events Posters is a WordPress plugin that displays event posters on a lis
 - **Sessions**: random token in an HttpOnly `gigio_session` cookie, backed by a transient; a per-session CSRF token is required in the `X-Gigio-Csrf` header on writes. See `gigio_start_session` / `gigio_require_organizer`.
 - **Approval gate**: submissions get `gigio_approved = '0'`. The `$includePending` param on `gigio_get_gigs_with_recurs` excludes pending events from the public listing and JSON export; only WP admins (`edit_others_pages`) see them, flagged red with an Approve button (`approveGig` sets `gigio_approved = '1'`). Editing an approved event resets it to pending.
 - **Date rule** (organizer path only): a past start is allowed only if the end date is today or later (`gigio_check_event_dates`); the admin/media path still silently normalizes (`gigio_normalize_event_dates`).
+- **Delete**: organizers can delete their own events via `DELETE /organizer/events/{id}` (`gigio_rest_organizer_delete`, ownership + CSRF checked, also removes the poster attachment); a Delete button sits next to Edit in "my events".
+- **Moderator notifications**: submit/update queue a debounced email to `info@gigiau.uk`. Each change (re)schedules a single WP-Cron event 15 minutes out (`gigio_queue_submission_notification`), so a burst of edits collapses into one summary email (`gigio_send_submission_notification_email`). The email links to the `[gigiau]` listings page + `#approve` fragment (`gigio_listings_page_url`); `gigio.js` `gigioScrollToHash` scrolls that pending flag into view since it lives in the shadow root. Delivery depends on WP-Cron firing on traffic and the site's `wp_mail`/SMTP config.
 
 ### REST API Integration
 - Uses WordPress Backbone.js client (`wp.api.models.Post`) for admin CRUD
 - Custom `rest_insert_post` action enables metadata updates via API (also used by `approveGig`)
 - Admin controls save changes on focus-out with thread flagging to prevent data loss
-- Custom `gigiau/v1` namespace: `GET/POST /events` (public list + authenticated add), and `/organizer/{register,login,logout,session,events,events/{id}}` for the submission page. Shared event creation lives in `gigio_create_event`.
+- Custom `gigiau/v1` namespace: `GET/POST /events` (public list + authenticated add), and `/organizer/{register,login,logout,session,events}` plus `/organizer/events/{id}` (POST = edit, DELETE = delete) for the submission page. Shared event creation lives in `gigio_create_event`.
 
 ### Rendering Modes
 - **Default**: Flexbox wrap with various alignment options (top, bottom, base, cover, columns)
