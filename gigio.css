@@ -507,3 +507,233 @@ pre {
 .giglist.editing .gig-content-full {
     display: none !important;
 }
+
+/* ***** Pending-approval flag (admin only) ***** */
+
+.gig:has(.gig-pending) {
+    border-color: #cc0000;
+    box-shadow: 0 0 0 2px #cc0000;
+}
+
+.gig-pending {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background-color: #cc0000;
+    color: white;
+    padding: 4px 8px;
+    font-size: small;
+    font-weight: bold;
+}
+
+.gig-pending-label {
+    line-height: 1.2;
+}
+
+.giglist button.gig-approve-button {
+    background-color: white;
+    color: #cc0000;
+    border: 1px solid white;
+    font-weight: bold;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.giglist button.gig-approve-button:hover {
+    background-color: #ffe8e8;
+    border: 1px solid white;
+}
+
+/* ***** Submission page ([gigiau_submit]) ***** */
+
+.gigio-submit {
+    font-family: 'Roboto', sans-serif;
+    max-width: 640px;
+    margin: 0 auto;
+    color: #222;
+}
+
+.gigio-submit * {
+    box-sizing: border-box;
+}
+
+.gigio-submit h2 {
+    margin: 0 0 12px;
+}
+
+.gigio-submit-status {
+    padding: 0;
+}
+
+.gigio-submit-status:not(:empty) {
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    font-size: 0.95em;
+}
+
+.gigio-submit-status.error {
+    background-color: #fdecea;
+    color: #a12622;
+    border: 1px solid #f5c2c0;
+}
+
+.gigio-submit-status.success {
+    background-color: #eafaf0;
+    color: #1c6b3c;
+    border: 1px solid #b7e4c7;
+}
+
+.gigio-submit .gigio-field {
+    display: block;
+    margin-bottom: 14px;
+}
+
+.gigio-submit .gigio-field > span {
+    display: block;
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-bottom: 4px;
+}
+
+.gigio-submit input[type="text"],
+.gigio-submit input[type="email"],
+.gigio-submit input[type="password"],
+.gigio-submit input[type="url"],
+.gigio-submit input[type="datetime-local"],
+.gigio-submit input[type="date"],
+.gigio-submit input[type="file"],
+.gigio-submit select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #bbb;
+    border-radius: 5px;
+    font-size: 1em;
+    background-color: white;
+}
+
+.gigio-submit button {
+    padding: 9px 16px;
+    color: white;
+    background-color: dodgerblue;
+    border: 0;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.gigio-submit button:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.gigio-submit button.gigio-secondary {
+    background-color: transparent;
+    color: dodgerblue;
+    text-decoration: underline;
+    padding: 6px 4px;
+}
+
+.gigio-submit button.gigio-danger {
+    background-color: #cc0000;
+}
+
+.gigio-submit-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.gigio-submit-topbar .gigio-who {
+    font-size: 0.9em;
+    color: #555;
+}
+
+.gigio-submit fieldset {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 14px;
+    margin: 0 0 18px;
+}
+
+.gigio-submit legend {
+    font-weight: bold;
+    padding: 0 6px;
+}
+
+.gigio-new-venue {
+    margin-top: 8px;
+}
+
+/* Gentle hint that the start date is in the past (needs an end date today or
+   later). Not a hard error — the real check happens on Submit. */
+.gigio-submit input.gigio-old-date {
+    outline: 2px solid #cc0000;
+    outline-offset: 1px;
+}
+
+/* My events list */
+.gigio-my-events {
+    list-style: none;
+    padding: 0;
+    margin: 18px 0 0;
+}
+
+.gigio-my-event {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.gigio-my-event img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex: 0 0 auto;
+    background: #f0f0f0;
+}
+
+.gigio-my-event .gigio-my-event-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.gigio-my-event .gigio-my-event-title {
+    font-weight: bold;
+}
+
+.gigio-my-event .gigio-my-event-meta {
+    font-size: 0.85em;
+    color: #666;
+}
+
+.gigio-status-badge {
+    display: inline-block;
+    font-size: 0.75em;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.gigio-status-badge.pending {
+    background-color: #fff0e0;
+    color: #b5651d;
+    border: 1px solid #f0c08a;
+}
+
+.gigio-status-badge.approved {
+    background-color: #eafaf0;
+    color: #1c6b3c;
+    border: 1px solid #b7e4c7;
+}

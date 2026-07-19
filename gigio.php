@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.7
+ * @version 2.8
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.7
+ * Version: 2.8
  */
 
 /*
@@ -67,12 +67,56 @@ add_action('wp_enqueue_scripts', function ($hook_suffix) {
     wp_enqueue_media();
 });
 
-function gigio_install() {}
+function gigio_install()
+{
+    gigio_ensure_tables();
+}
 function gigio_deactivate() {}
 function gigio_uninstall() {}
 register_activation_hook(__FILE__, 'gigio_install');
 register_deactivation_hook(__FILE__, 'gigio_deactivate');
 register_uninstall_hook(__FILE__, 'gigio_uninstall');
+
+/**
+ * Name of the custom table holding event-organizer accounts.
+ * These are NOT WordPress users: they sign in with a simple email + password
+ * on the [gigiau_submit] page and can only submit/edit their own events.
+ */
+function gigio_organizers_table()
+{
+    global $wpdb;
+    return $wpdb->prefix . 'gigio_organizers';
+}
+
+/**
+ * Create/upgrade the organizers table. Safe to call repeatedly (dbDelta only
+ * applies differences). Called on activation and lazily on first REST/shortcode
+ * use so the table exists even if the plugin was updated without re-activation.
+ */
+function gigio_ensure_tables()
+{
+    global $wpdb;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
+    $table = gigio_organizers_table();
+    $charset_collate = $wpdb->get_charset_collate();
+    $sql = "CREATE TABLE $table (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        email VARCHAR(190) NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        name VARCHAR(190) NOT NULL DEFAULT '',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY  (id),
+        UNIQUE KEY email (email)
+    ) $charset_collate;";
+
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta($sql);
+}
 
 
 // ******* Shortcode **********
@@ -122,7 +166,9 @@ function gigio_events_list_shortcode($attributes = [])
         'headercolor' => validate_param($headercolor, "/^#?[a-zA-Z0-9]{3,24}$/", "#303030"),
         'popImages' => $popImages,
         'json' => $_GET['json'] ?? false,
-        'venueinfilename' => $venueinfilename
+        'venueinfilename' => $venueinfilename,
+        // Only WordPress editors see events still awaiting approval, flagged red.
+        'includePending' => current_user_can('edit_others_pages')
     ];
 
     // If this is first time:
@@ -151,7 +197,10 @@ function validate_param($param, $pattern, $default)
 
 function gigio_gig_list($p)
 {
-    $postDated = gigio_get_gigs_with_recurs($p['fromDate'], $p['category']);
+    // The JSON export must never leak unapproved events, even for an admin; only
+    // the rendered on-page listing shows pending events (so the admin can moderate).
+    $includePending = empty($p['json']) && !empty($p['includePending']);
+    $postDated = gigio_get_gigs_with_recurs($p['fromDate'], $p['category'], $includePending);
     if ($p['json'] == 2) {
         return "<pre id='gigiau'>\n" . json_encode($postDated, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
@@ -170,13 +219,28 @@ function gigio_gig_list($p)
     return gigio_gig_show($gigs, $p);
 }
 
-function gigio_get_gigs_with_recurs($fromDate, $category)
+/**
+ * @param (bool) $includePending When false (public/JSON), exclude events awaiting
+ *        approval (meta gigio_approved = '0'). Only the admin listing passes true.
+ */
+function gigio_get_gigs_with_recurs($fromDate, $category, $includePending = false)
 {
     global $wpdb;
+
+    // Events submitted through [gigiau_submit] carry gigio_approved = '0' until
+    // an admin approves them. Everything else (no meta, or '1') is public.
+    $approvalGate = $includePending ? "" : "
+        AND NOT EXISTS (
+            SELECT 1 FROM $wpdb->postmeta pmx
+            WHERE pmx.post_id = p.ID
+            AND pmx.meta_key = 'gigio_approved'
+            AND pmx.meta_value = '0'
+        )";
+
     // dtend > now || recursday > 0 && dtend = dtstart
-    $query = " 
-        SELECT ID, post_title , 
-            pm.meta_value AS 'dtend' , 
+    $query = "
+        SELECT ID, post_title ,
+            pm.meta_value AS 'dtend' ,
             pm2.meta_value AS 'dtstart',
             pm3.meta_value AS 'recursday'
         FROM $wpdb->posts p
@@ -195,6 +259,7 @@ function gigio_get_gigs_with_recurs($fromDate, $category)
                 AND pm.meta_value = pm2.meta_value
             )
         )
+        $approvalGate
         ";
 
     return $wpdb->get_results($query);
@@ -250,6 +315,14 @@ function gigio_get_gigs($fromDate, $category, $postIds = [])
             'content' => get_the_content(),
             'smallpic' => get_the_post_thumbnail_url(null, "medium"),
             'pic' => get_the_post_thumbnail_url(null, "full"),
+            // Awaiting admin approval? (submitted via [gigiau_submit]). The public
+            // query already filters these out; the admin listing keeps them so it
+            // can show a red flag + Approve button. The organizer's email is only
+            // exposed to admins (never in public/JSON output).
+            'pending' => (get_post_meta($id, 'gigio_approved', true) === '0'),
+            'organizer' => current_user_can('edit_others_pages')
+                ? (get_post_meta($id, 'gigio_organizer_email', true) ?: '')
+                : '',
             'meta' => array_map(function ($m) {
                 return $m[0];
             }, get_post_meta($id))
@@ -371,6 +444,7 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
     ob_start();
 ?>
     <div class="gig" data-id="%gigid">
+        <?php if ($isSignedIn) { ?>%pendingflag<?php } ?>
         <?php
         $parts = explode(" ", $layout);
         foreach ($parts as $part) {
@@ -746,25 +820,52 @@ function gigio_rest_list_events($request)
  */
 function gigio_rest_add_event($request)
 {
-    $title = trim((string) $request->get_param('title'));
+    $post_id = gigio_create_event([
+        'title'       => $request->get_param('title'),
+        'dtstart'     => $request->get_param('dtstart'),
+        'dtend'       => $request->get_param('dtend'),
+        'venue'       => $request->get_param('venue'),
+        'dtinfo'      => $request->get_param('dtinfo'),
+        'bookinglink' => $request->get_param('bookinglink'),
+    ], $request->get_file_params());
+
+    if (is_wp_error($post_id)) {
+        return $post_id;
+    }
+    return gigio_event_response($post_id, 201);
+}
+
+/**
+ * Shared event-post creation, used by both the admin REST endpoint and the
+ * organizer submission endpoint. Normalises dates the same way the admin JS
+ * (newPost) does, stores the title safely, sets meta, and attaches an uploaded
+ * poster as the featured image.
+ *
+ * @param array      $fields    title, dtstart, dtend, venue, dtinfo, bookinglink
+ * @param array      $files     $request->get_file_params() (poster in field `picture`)
+ * @param array|null $organizer null for an admin add (auto-approved); otherwise
+ *                              ['id' => int, 'email' => string], which flags the
+ *                              event pending approval and records ownership.
+ * @param bool       $posterRequired  reject the submission if no poster is supplied
+ * @param bool       $normalizeDates  true (admin) coerces a past/empty start to
+ *                              today; false (organizer, already validated) keeps
+ *                              the given start so still-running events can begin
+ *                              before today.
+ * @return int|WP_Error  new post ID, or error
+ */
+function gigio_create_event($fields, $files, $organizer = null, $posterRequired = false, $normalizeDates = true)
+{
+    $title = trim((string) ($fields['title'] ?? ''));
     if ($title === '') {
         return new WP_Error('gigio_missing_title', 'A title is required.', ['status' => 400]);
     }
+    if ($posterRequired && empty($files['picture']['tmp_name'])) {
+        return new WP_Error('gigio_missing_poster', 'A poster image is required.', ['status' => 400]);
+    }
 
-    // Normalise dates the same way the admin JS (newPost) does:
-    // start defaults to today if missing or in the past; end defaults to start.
-    $today = date('Y-m-d');
-    $dtstart = trim((string) $request->get_param('dtstart'));
-    if ($dtstart === '' || strcmp(substr($dtstart, 0, 10), $today) < 0) {
-        $dtstart = $today;
-    }
-    $dtend = trim((string) $request->get_param('dtend'));
-    if ($dtend === '' || strcmp(substr($dtend, 0, 10), substr($dtstart, 0, 10)) < 0) {
-        $dtend = substr($dtstart, 0, 10);
-    }
-    $venue = trim((string) $request->get_param('venue'));
-    $dtinfo = trim((string) $request->get_param('dtinfo'));
-    $bookinglink = trim((string) $request->get_param('bookinglink'));
+    list($dtstart, $dtend) = $normalizeDates
+        ? gigio_normalize_event_dates($fields['dtstart'] ?? '', $fields['dtend'] ?? '')
+        : gigio_resolve_event_dates($fields['dtstart'] ?? '', $fields['dtend'] ?? '');
 
     // The site database may store post_title as utf8mb3/latin1, which rejects
     // raw multi-byte characters. Encode anything above ASCII to numeric HTML
@@ -788,43 +889,550 @@ function gigio_rest_add_event($request)
 
     update_post_meta($post_id, 'dtstart', $dtstart);
     update_post_meta($post_id, 'dtend', $dtend);
-    update_post_meta($post_id, 'venue', $venue);
-    update_post_meta($post_id, 'dtinfo', $dtinfo);
-    update_post_meta($post_id, 'bookinglink', $bookinglink);
+    update_post_meta($post_id, 'venue', trim((string) ($fields['venue'] ?? '')));
+    update_post_meta($post_id, 'dtinfo', trim((string) ($fields['dtinfo'] ?? '')));
+    update_post_meta($post_id, 'bookinglink', trim((string) ($fields['bookinglink'] ?? '')));
     update_post_meta($post_id, 'recursday', 0);
 
-    // Attach the uploaded poster (multipart/form-data field `picture`) as the
-    // featured image.
-    $files = $request->get_file_params();
-    if (!empty($files['picture']) && !empty($files['picture']['tmp_name'])) {
-        require_once ABSPATH . 'wp-admin/includes/image.php';
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        require_once ABSPATH . 'wp-admin/includes/media.php';
-
-        $attachment_id = media_handle_upload('picture', $post_id);
-        if (is_wp_error($attachment_id)) {
-            // Roll back the post so we don't leave a picture-less event behind.
-            wp_delete_post($post_id, true);
-            return new WP_Error(
-                'gigio_upload_failed',
-                'Poster upload failed: ' . $attachment_id->get_error_message(),
-                ['status' => 400]
-            );
-        }
-        set_post_thumbnail($post_id, $attachment_id);
+    // Organizer submissions start unapproved and record who submitted them.
+    if ($organizer) {
+        update_post_meta($post_id, 'gigio_approved', '0');
+        update_post_meta($post_id, 'gigio_organizer', (int) $organizer['id']);
+        update_post_meta($post_id, 'gigio_organizer_email', (string) $organizer['email']);
     }
 
+    $poster = gigio_attach_poster($post_id, $files);
+    if (is_wp_error($poster)) {
+        // Roll back the post so we don't leave a picture-less event behind.
+        wp_delete_post($post_id, true);
+        return $poster;
+    }
+
+    return $post_id;
+}
+
+/**
+ * Attach an uploaded poster (multipart/form-data field `picture`) as the
+ * featured image. Returns the attachment id, false if no file was supplied,
+ * or a WP_Error on failure.
+ */
+function gigio_attach_poster($post_id, $files, $field = 'picture')
+{
+    if (empty($files[$field]) || empty($files[$field]['tmp_name'])) {
+        return false;
+    }
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/media.php';
+
+    $attachment_id = media_handle_upload($field, $post_id);
+    if (is_wp_error($attachment_id)) {
+        return new WP_Error(
+            'gigio_upload_failed',
+            'Poster upload failed: ' . $attachment_id->get_error_message(),
+            ['status' => 400]
+        );
+    }
+    set_post_thumbnail($post_id, $attachment_id);
+    return $attachment_id;
+}
+
+/**
+ * Build the standard REST response describing one event post.
+ */
+function gigio_event_response($post_id, $status = 200)
+{
     $response = rest_ensure_response([
-        'id'      => $post_id,
-        'title'   => html_entity_decode(get_the_title($post_id), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
-        'start'   => gigio_iso_datetime($dtstart),
-        'end'     => $dtend,
-        'venue'   => $venue,
-        'dtinfo'  => $dtinfo,
-        'bookinglink' => $bookinglink,
-        'picture' => get_the_post_thumbnail_url($post_id, 'full') ?: null,
-        'link'    => get_permalink($post_id),
+        'id'          => $post_id,
+        'title'       => html_entity_decode(get_the_title($post_id), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+        'start'       => gigio_iso_datetime(get_post_meta($post_id, 'dtstart', true)),
+        'end'         => get_post_meta($post_id, 'dtend', true),
+        'venue'       => get_post_meta($post_id, 'venue', true),
+        'dtinfo'      => get_post_meta($post_id, 'dtinfo', true),
+        'bookinglink' => get_post_meta($post_id, 'bookinglink', true),
+        'approved'    => get_post_meta($post_id, 'gigio_approved', true) !== '0',
+        'picture'     => get_the_post_thumbnail_url($post_id, 'full') ?: null,
+        'link'        => get_permalink($post_id),
     ]);
-    $response->set_status(201);
+    $response->set_status($status);
     return $response;
+}
+
+/**
+ * Normalise a start/end date pair the same way the admin JS (newPost) does:
+ * start defaults to today if missing or in the past; end defaults to start.
+ * Times on the start value are preserved.
+ * @return array [dtstart, dtend]
+ */
+function gigio_normalize_event_dates($dtstart, $dtend)
+{
+    $today = date('Y-m-d');
+    $dtstart = trim((string) $dtstart);
+    if ($dtstart === '' || strcmp(substr($dtstart, 0, 10), $today) < 0) {
+        $dtstart = $today;
+    }
+    $dtend = trim((string) $dtend);
+    if ($dtend === '' || strcmp(substr($dtend, 0, 10), substr($dtstart, 0, 10)) < 0) {
+        $dtend = substr($dtstart, 0, 10);
+    }
+    return [$dtstart, $dtend];
+}
+
+/**
+ * Validate organizer-supplied dates and return a clear WP_Error for anything
+ * nonsensical, rather than silently coercing it (the admin path still coerces).
+ * Checks: a start is supplied and parseable; if an end is given it parses and is
+ * not before the start; and the event is not entirely in the past. A past start
+ * IS allowed for an event still running — i.e. one whose end date is today or
+ * later. Comparisons are by date only, matching the rest of the plugin's date
+ * logic, and use the site timezone.
+ *
+ * @return true|WP_Error
+ */
+function gigio_check_event_dates($dtstart, $dtend)
+{
+    $dtstart = trim((string) $dtstart);
+    if ($dtstart === '') {
+        return new WP_Error('gigio_missing_date', 'Please choose a date and time for the event.', ['status' => 400]);
+    }
+    try {
+        $start = new DateTime(str_replace('T', ' ', $dtstart), wp_timezone());
+    } catch (Exception $e) {
+        return new WP_Error('gigio_bad_date', "The event's date and time couldn't be understood.", ['status' => 400]);
+    }
+
+    $today    = (new DateTime('today', wp_timezone()))->format('Y-m-d');
+    $startDay = $start->format('Y-m-d');
+
+    $dtend  = trim((string) $dtend);
+    $endDay = '';
+    if ($dtend !== '') {
+        try {
+            $end = new DateTime(str_replace('T', ' ', $dtend), wp_timezone());
+        } catch (Exception $e) {
+            return new WP_Error('gigio_bad_date', "The end date couldn't be understood.", ['status' => 400]);
+        }
+        $endDay = $end->format('Y-m-d');
+        if ($endDay < $startDay) {
+            return new WP_Error('gigio_end_before_start', "The end date can't be before the start date.", ['status' => 400]);
+        }
+    }
+
+    // A past start is fine for an event still running (end today or later);
+    // otherwise the whole event is over and shouldn't be listed.
+    if ($startDay < $today && ($endDay === '' || $endDay < $today)) {
+        return new WP_Error(
+            'gigio_past_event',
+            "That start date has passed. If the event is still running, set an end date of today or later; otherwise choose a current date.",
+            ['status' => 400]
+        );
+    }
+    return true;
+}
+
+/**
+ * Resolve organizer dates for storage WITHOUT coercing a past start to today
+ * (unlike gigio_normalize_event_dates, used by the admin path). The start is
+ * kept as given; an empty or earlier end defaults to the start date. Assumes
+ * the pair has already passed gigio_check_event_dates().
+ *
+ * @return array [dtstart, dtend]
+ */
+function gigio_resolve_event_dates($dtstart, $dtend)
+{
+    $dtstart = trim((string) $dtstart);
+    $dtend   = trim((string) $dtend);
+    if ($dtend === '' || strcmp(substr($dtend, 0, 10), substr($dtstart, 0, 10)) < 0) {
+        $dtend = substr($dtstart, 0, 10);
+    }
+    return [$dtstart, $dtend];
+}
+
+/**
+ * Distinct venue names already used by events, for the submission dropdown
+ * (so organizers reuse names we already know rather than inventing variants).
+ */
+function gigio_known_venues()
+{
+    global $wpdb;
+    $rows = $wpdb->get_col(
+        "SELECT DISTINCT meta_value FROM $wpdb->postmeta
+         WHERE meta_key = 'venue' AND meta_value <> ''
+         ORDER BY meta_value"
+    );
+    return array_values(array_filter(array_map('trim', (array) $rows)));
+}
+
+
+// ************ Organizer accounts (custom email + password) ***********
+//
+// Event organizers are NOT WordPress users. They register and sign in on the
+// [gigiau_submit] page with an email + password (stored bcrypt-hashed in the
+// gigio_organizers table) and may submit and edit only their own events. Every
+// submission is held for admin approval (meta gigio_approved = '0') before it
+// appears on the public listing or in the JSON export.
+
+define('GIGIO_SESSION_COOKIE', 'gigio_session');
+define('GIGIO_SESSION_TTL', 30 * DAY_IN_SECONDS);
+
+function gigio_session_transient_key($token)
+{
+    return 'gigio_sess_' . hash('sha256', $token);
+}
+
+/**
+ * Start a session for an organizer: issue a random token, remember it
+ * server-side (transient -> organizer id + CSRF token) and set an HttpOnly
+ * cookie. Returns the CSRF token the client must send back in the
+ * X-Gigio-Csrf header on write requests.
+ */
+function gigio_start_session($organizer_id)
+{
+    $token = bin2hex(random_bytes(32));
+    $csrf  = bin2hex(random_bytes(16));
+    set_transient(gigio_session_transient_key($token), [
+        'organizer' => (int) $organizer_id,
+        'csrf'      => $csrf,
+    ], GIGIO_SESSION_TTL);
+    gigio_set_session_cookie($token, time() + GIGIO_SESSION_TTL);
+    $_COOKIE[GIGIO_SESSION_COOKIE] = $token; // usable within this same request
+    return $csrf;
+}
+
+function gigio_set_session_cookie($value, $expires)
+{
+    setcookie(GIGIO_SESSION_COOKIE, $value, [
+        'expires'  => $expires,
+        'path'     => '/',
+        'secure'   => is_ssl(),
+        'httponly' => true,
+        'samesite' => 'Strict',
+    ]);
+}
+
+function gigio_end_session()
+{
+    $token = $_COOKIE[GIGIO_SESSION_COOKIE] ?? '';
+    if ($token) {
+        delete_transient(gigio_session_transient_key($token));
+    }
+    gigio_set_session_cookie('', time() - 3600);
+    unset($_COOKIE[GIGIO_SESSION_COOKIE]);
+}
+
+/** Current session array ['organizer'=>id,'csrf'=>...] or null. */
+function gigio_current_session()
+{
+    $token = $_COOKIE[GIGIO_SESSION_COOKIE] ?? '';
+    if (!$token) {
+        return null;
+    }
+    $data = get_transient(gigio_session_transient_key($token));
+    return is_array($data) ? $data : null;
+}
+
+/** Current signed-in organizer row (id,email,name) or null. */
+function gigio_current_organizer()
+{
+    $session = gigio_current_session();
+    if (!$session) {
+        return null;
+    }
+    global $wpdb;
+    $table = gigio_organizers_table();
+    return $wpdb->get_row(
+        $wpdb->prepare("SELECT id, email, name FROM $table WHERE id = %d", $session['organizer'])
+    );
+}
+
+/**
+ * Guard for write endpoints: require a valid session AND a matching CSRF token
+ * (double-submit) in the X-Gigio-Csrf header. Returns the organizer row or a
+ * WP_Error.
+ */
+function gigio_require_organizer($request)
+{
+    $session = gigio_current_session();
+    if (!$session) {
+        return new WP_Error('gigio_not_signed_in', 'Please sign in first.', ['status' => 401]);
+    }
+    $header = (string) $request->get_header('X-Gigio-Csrf');
+    if ($header === '' || !hash_equals((string) $session['csrf'], $header)) {
+        return new WP_Error('gigio_bad_csrf', 'Your session has expired. Please sign in again.', ['status' => 403]);
+    }
+    $organizer = gigio_current_organizer();
+    if (!$organizer) {
+        return new WP_Error('gigio_not_signed_in', 'Please sign in first.', ['status' => 401]);
+    }
+    return $organizer;
+}
+
+/** The events belonging to one organizer, newest first, with approval status. */
+function gigio_organizer_events($organizer_id)
+{
+    $query = new WP_Query([
+        'post_type'      => 'post',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'meta_key'       => 'gigio_organizer',
+        'meta_value'     => (int) $organizer_id,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'suppress_filters' => true,
+    ]);
+    $events = [];
+    foreach ($query->posts as $post) {
+        $id = $post->ID;
+        $events[] = [
+            'id'          => $id,
+            'title'       => html_entity_decode(get_the_title($id), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            'dtstart'     => get_post_meta($id, 'dtstart', true),
+            'dtend'       => get_post_meta($id, 'dtend', true),
+            'venue'       => get_post_meta($id, 'venue', true),
+            'dtinfo'      => get_post_meta($id, 'dtinfo', true),
+            'bookinglink' => get_post_meta($id, 'bookinglink', true),
+            'approved'    => get_post_meta($id, 'gigio_approved', true) !== '0',
+            'picture'     => get_the_post_thumbnail_url($id, 'medium') ?: null,
+        ];
+    }
+    wp_reset_postdata();
+    return $events;
+}
+
+/**
+ * The payload returned after a successful register/login and by GET /session:
+ * who is signed in, the CSRF token, their events, and the known venue list.
+ */
+function gigio_session_payload($organizer_id, $csrf)
+{
+    global $wpdb;
+    $table = gigio_organizers_table();
+    $organizer = $wpdb->get_row(
+        $wpdb->prepare("SELECT id, email, name FROM $table WHERE id = %d", $organizer_id)
+    );
+    return rest_ensure_response([
+        'signedIn'  => true,
+        'csrf'      => $csrf,
+        'organizer' => [
+            'id'    => (int) $organizer->id,
+            'email' => $organizer->email,
+            'name'  => $organizer->name,
+        ],
+        'events' => gigio_organizer_events($organizer_id),
+        'venues' => gigio_known_venues(),
+    ]);
+}
+
+add_action('rest_api_init', function () {
+    gigio_ensure_tables();
+
+    $public = ['permission_callback' => '__return_true'];
+
+    register_rest_route('gigiau/v1', '/organizer/register', array_merge($public, [
+        'methods'  => 'POST',
+        'callback' => 'gigio_rest_organizer_register',
+    ]));
+    register_rest_route('gigiau/v1', '/organizer/login', array_merge($public, [
+        'methods'  => 'POST',
+        'callback' => 'gigio_rest_organizer_login',
+    ]));
+    register_rest_route('gigiau/v1', '/organizer/logout', array_merge($public, [
+        'methods'  => 'POST',
+        'callback' => 'gigio_rest_organizer_logout',
+    ]));
+    register_rest_route('gigiau/v1', '/organizer/session', array_merge($public, [
+        'methods'  => 'GET',
+        'callback' => 'gigio_rest_organizer_session',
+    ]));
+    register_rest_route('gigiau/v1', '/organizer/events', array_merge($public, [
+        'methods'  => 'POST',
+        'callback' => 'gigio_rest_organizer_submit',
+    ]));
+    register_rest_route('gigiau/v1', '/organizer/events/(?P<id>\d+)', array_merge($public, [
+        'methods'  => 'POST',
+        'callback' => 'gigio_rest_organizer_update',
+    ]));
+});
+
+function gigio_rest_organizer_register($request)
+{
+    gigio_ensure_tables();
+    $email    = strtolower(trim((string) $request->get_param('email')));
+    $password = (string) $request->get_param('password');
+    $name     = trim((string) $request->get_param('name'));
+
+    if (!is_email($email)) {
+        return new WP_Error('gigio_bad_email', 'Please enter a valid email address.', ['status' => 400]);
+    }
+    if (strlen($password) < 8) {
+        return new WP_Error('gigio_weak_password', 'Password must be at least 8 characters.', ['status' => 400]);
+    }
+
+    global $wpdb;
+    $table = gigio_organizers_table();
+    $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE email = %s", $email));
+    if ($exists) {
+        return new WP_Error('gigio_email_taken', 'An account with that email already exists — try signing in.', ['status' => 409]);
+    }
+
+    $ok = $wpdb->insert($table, [
+        'email'         => $email,
+        'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+        'name'          => $name,
+        'created_at'    => current_time('mysql'),
+    ]);
+    if (!$ok) {
+        return new WP_Error('gigio_register_failed', 'Could not create the account.', ['status' => 500]);
+    }
+
+    $id   = (int) $wpdb->insert_id;
+    $csrf = gigio_start_session($id);
+    return gigio_session_payload($id, $csrf);
+}
+
+function gigio_rest_organizer_login($request)
+{
+    gigio_ensure_tables();
+    $email    = strtolower(trim((string) $request->get_param('email')));
+    $password = (string) $request->get_param('password');
+
+    global $wpdb;
+    $table = gigio_organizers_table();
+    $row = $wpdb->get_row(
+        $wpdb->prepare("SELECT id, password_hash FROM $table WHERE email = %s", $email)
+    );
+    if (!$row || !password_verify($password, $row->password_hash)) {
+        return new WP_Error('gigio_bad_credentials', 'Email or password not recognised.', ['status' => 401]);
+    }
+
+    $csrf = gigio_start_session((int) $row->id);
+    return gigio_session_payload((int) $row->id, $csrf);
+}
+
+function gigio_rest_organizer_logout($request)
+{
+    gigio_end_session();
+    return rest_ensure_response(['signedIn' => false]);
+}
+
+function gigio_rest_organizer_session($request)
+{
+    $organizer = gigio_current_organizer();
+    if (!$organizer) {
+        return rest_ensure_response(['signedIn' => false, 'venues' => gigio_known_venues()]);
+    }
+    $session = gigio_current_session();
+    return gigio_session_payload((int) $organizer->id, $session['csrf'] ?? '');
+}
+
+function gigio_rest_organizer_submit($request)
+{
+    $organizer = gigio_require_organizer($request);
+    if (is_wp_error($organizer)) {
+        return $organizer;
+    }
+
+    $dateError = gigio_check_event_dates($request->get_param('dtstart'), $request->get_param('dtend'));
+    if (is_wp_error($dateError)) {
+        return $dateError;
+    }
+
+    $post_id = gigio_create_event([
+        'title'       => $request->get_param('title'),
+        'dtstart'     => $request->get_param('dtstart'),
+        'dtend'       => $request->get_param('dtend'),
+        'venue'       => $request->get_param('venue'),
+        'dtinfo'      => $request->get_param('dtinfo'),
+        'bookinglink' => $request->get_param('bookinglink'),
+    ], $request->get_file_params(), [
+        'id'    => $organizer->id,
+        'email' => $organizer->email,
+    ], true, false);
+
+    if (is_wp_error($post_id)) {
+        return $post_id;
+    }
+    return gigio_event_response($post_id, 201);
+}
+
+function gigio_rest_organizer_update($request)
+{
+    $organizer = gigio_require_organizer($request);
+    if (is_wp_error($organizer)) {
+        return $organizer;
+    }
+
+    $post_id = (int) $request->get_param('id');
+    $owner   = (int) get_post_meta($post_id, 'gigio_organizer', true);
+    if (!$post_id || $owner !== (int) $organizer->id) {
+        return new WP_Error('gigio_forbidden', 'You can only edit events you submitted.', ['status' => 403]);
+    }
+
+    $dateError = gigio_check_event_dates($request->get_param('dtstart'), $request->get_param('dtend'));
+    if (is_wp_error($dateError)) {
+        return $dateError;
+    }
+
+    $title = trim((string) $request->get_param('title'));
+    if ($title !== '') {
+        $title_stored = mb_encode_numericentity($title, [0x80, 0x10FFFF, 0, 0xFFFFFF], 'UTF-8');
+        wp_update_post(['ID' => $post_id, 'post_title' => $title_stored]);
+    }
+
+    list($dtstart, $dtend) = gigio_resolve_event_dates(
+        $request->get_param('dtstart'),
+        $request->get_param('dtend')
+    );
+    update_post_meta($post_id, 'dtstart', $dtstart);
+    update_post_meta($post_id, 'dtend', $dtend);
+    update_post_meta($post_id, 'venue', trim((string) $request->get_param('venue')));
+    update_post_meta($post_id, 'dtinfo', trim((string) $request->get_param('dtinfo')));
+    update_post_meta($post_id, 'bookinglink', trim((string) $request->get_param('bookinglink')));
+
+    // A replacement poster is optional on edit.
+    $poster = gigio_attach_poster($post_id, $request->get_file_params());
+    if (is_wp_error($poster)) {
+        return $poster;
+    }
+
+    // Editing sends the event back to pending so the admin re-checks it.
+    update_post_meta($post_id, 'gigio_approved', '0');
+
+    return gigio_event_response($post_id, 200);
+}
+
+
+// ************ Submission page shortcode ***********
+//
+// Place [gigiau_submit] on a page. Organizers see sign-in / sign-up when logged
+// out; when signed in they get the submission form (with a venue dropdown of
+// known names) and a list of their own events with approval status and Edit.
+
+add_shortcode('gigiau_submit', 'gigio_submit_shortcode');
+
+function gigio_submit_shortcode($attributes = [])
+{
+    gigio_ensure_tables();
+
+    $jsFile = plugin_dir_path(__FILE__) . 'gigio-submit.js';
+    $jsModTime = file_exists($jsFile) ? filemtime($jsFile) : null;
+    wp_enqueue_script('gigiosubmitjs', plugin_dir_url(__FILE__) . 'gigio-submit.js', [], $jsModTime, true);
+
+    $cssFile = plugin_dir_path(__FILE__) . 'gigio.css';
+    $cssModTime = filemtime($cssFile);
+
+    $config = [
+        'restBase' => esc_url_raw(rest_url('gigiau/v1')),
+        'venues'   => gigio_known_venues(),
+    ];
+
+    ob_start();
+?>
+    <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigio.css?ver=<?= $cssModTime ?>">
+    <div class="gigio-submit" data-config="<?= esc_attr(wp_json_encode($config)) ?>">
+        <div class="gigio-submit-status" role="status" aria-live="polite"></div>
+        <div class="gigio-submit-body">Loading&hellip;</div>
+    </div>
+<?php
+    return ob_get_clean();
 }

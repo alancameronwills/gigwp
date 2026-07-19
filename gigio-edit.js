@@ -517,8 +517,27 @@ function gigTemplateEditingMap(post, map) {
 }
 
 /**
+ * Admin clicked Approve on a pending (organizer-submitted) gig.
+ * Clears the gigio_approved flag via the same meta-save path the editor uses,
+ * so the event becomes public. Removes the red flag on success.
+ * @param {*} id Post id
+ */
+function approveGig(id) {
+    const gig = gigio(`.gig[data-id="${id}"]`);
+    threadFlag(1);
+    const post = new wp.api.models.Post({ id: id, meta: { gigio_approved: "1" } });
+    post.save().done(function () {
+        threadFlag(-1);
+        gig?.querySelector(".gig-pending")?.remove();
+    }).fail(function (xhr) {
+        threadFlag(-1);
+        alert("Could not approve event: " + (xhr?.responseJSON?.message || xhr?.statusText || "error"));
+    });
+}
+
+/**
  * User clicked Delete on a gig
- * @param {} id 
+ * @param {} id
  */
 function deleteGig(id) {
     let gig = gigio(`.gig[data-id="${id}"]`);

@@ -143,8 +143,21 @@ function gigHtml(post) {
             contentText = contentText.replace(/\n\s*\n/g, "\n").trim();
         }
 
+        // Events awaiting approval (submitted via [gigiau_submit]) only reach the
+        // admin. Show a red flag + Approve button. The %pendingflag slot only
+        // exists in the admin template, so non-admins never see it.
+        let pendingflag = "";
+        if (post.pending) {
+            const who = post.organizer ? ` from ${("" + post.organizer).replaceAll(/</g, "&lt;")}` : "";
+            pendingflag = `<div class="gig-pending">
+                <span class="gig-pending-label">⚑ Awaiting approval${who}</span>
+                <button class="gig-approve-button" onclick="approveGig('${post.id}')">Approve</button>
+            </div>`;
+        }
+
         let maps = {
             "gigid": post.id,
+            "pendingflag": pendingflag,
             "gigtitle": title,
             "gigpic": imgLink,
             "gigimg": imgElement,
