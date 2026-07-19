@@ -1485,6 +1485,35 @@ function gigio_queue_submission_notification($post_id, $action)
  * can't send the same batch twice; anything that arrives mid-send starts a fresh
  * batch.
  */
+/**
+ * URL of the page showing the [gigiau] listing, with the #approve fragment so an
+ * admin lands on the first pending flag. Prefers a Page over a post; falls back
+ * to the site home if no [gigiau] page is found. `has_shortcode(..., 'gigiau')`
+ * matches the exact tag, so a page holding only [gigiau_submit] is skipped.
+ * Cached per request.
+ */
+function gigio_listings_page_url()
+{
+    static $url = null;
+    if ($url !== null) {
+        return $url;
+    }
+    global $wpdb;
+    $ids = $wpdb->get_col(
+        "SELECT ID FROM $wpdb->posts
+         WHERE post_status = 'publish'
+         AND post_type IN ('page','post')
+         AND post_content LIKE '%[gigiau%'
+         ORDER BY (post_type = 'page') DESC, ID ASC"
+    );
+    foreach ($ids as $id) {
+        if (has_shortcode(get_post_field('post_content', $id), 'gigiau')) {
+            return $url = get_permalink($id) . '#approve';
+        }
+    }
+    return $url = get_home_url(null, '/#approve');
+}
+
 function gigio_send_submission_notification_email()
 {
     $queue = get_option(GIGIO_NOTIFY_OPTION, []);
@@ -1503,13 +1532,11 @@ function gigio_send_submission_notification_email()
         $start  = get_post_meta($post_id, 'dtstart', true);
         $who    = get_post_meta($post_id, 'gigio_organizer_email', true) ?: 'unknown';
         $status = get_post_meta($post_id, 'gigio_approved', true) === '0' ? 'awaiting approval' : 'approved';
-        $edit   = get_home_url(null, "#approve");// admin_url('post.php?post=' . $post_id . '&action=edit');
 
         $lines[] = "* {$action}: \"{$title}\""
             . ($start ? " \u{2014} {$start}" : '')
             . ($venue ? " @ {$venue}" : '') . "\n"
-            . "    by {$who}  ({$status})\n"
-            . "    Review: {$edit}";
+            . "    by {$who}  ({$status})";
     }
 
     $count = count($lines);
@@ -1521,7 +1548,8 @@ function gigio_send_submission_notification_email()
     $body = 'The following event' . ($count === 1 ? ' was' : 's were')
         . ' submitted or updated on Gigiau and ' . ($count === 1 ? 'is' : 'are') . " awaiting approval:\n\n"
         . implode("\n\n", $lines)
-        . "\n\nApprove them on your events listings page (red flag \u{2192} Approve), or open the review links above.\n";
+        . "\n\nReview and approve on the events page (red flag \u{2192} Approve):\n"
+        . gigio_listings_page_url() . "\n";
 
     wp_mail(GIGIO_NOTIFY_EMAIL, $subject, $body);
 }
