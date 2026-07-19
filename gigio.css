@@ -690,6 +690,12 @@ pre {
     margin-bottom: 10px;
 }
 
+.gigo-event-form {
+    padding: 0 20px 40px 20px;
+    background-color: whitesmoke;
+    border-radius: 4px;
+}
+
 .gigio-my-event img {
     width: 56px;
     height: 56px;
