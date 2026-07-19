@@ -779,6 +779,34 @@ function gigio_iso_datetime($value)
 }
 
 /**
+ * Encode any above-ASCII characters to numeric HTML entities (e.g. "£" ->
+ * "&#163;") before storing text meta. The site database may store these columns
+ * as utf8mb3/latin1, which would drop raw multi-byte input; entities are pure
+ * ASCII and survive. Mirrors how event titles are stored. Pair with
+ * gigio_decode_text() when reading the value back as plain text. Safe on empty
+ * or already-ASCII strings (returned unchanged).
+ */
+function gigio_encode_text($s)
+{
+    $s = (string) $s;
+    if ($s === '') {
+        return '';
+    }
+    return mb_encode_numericentity($s, [0x80, 0x10FFFF, 0, 0xFFFFFF], 'UTF-8');
+}
+
+/**
+ * Inverse of gigio_encode_text(): turn stored numeric entities back into plain
+ * UTF-8 for JSON/API/text contexts. A raw (un-encoded, e.g. pre-existing) value
+ * has no entities and is returned unchanged, so this is safe on mixed old/new
+ * data.
+ */
+function gigio_decode_text($s)
+{
+    return html_entity_decode((string) $s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
+
+/**
  * GET /wp-json/gigiau/v1/events
  * Return the title and start date-time of every current/future event,
  * sorted by start date, with recurring events resolved to their next date.
@@ -867,11 +895,9 @@ function gigio_create_event($fields, $files, $organizer = null, $posterRequired 
         ? gigio_normalize_event_dates($fields['dtstart'] ?? '', $fields['dtend'] ?? '')
         : gigio_resolve_event_dates($fields['dtstart'] ?? '', $fields['dtend'] ?? '');
 
-    // The site database may store post_title as utf8mb3/latin1, which rejects
-    // raw multi-byte characters. Encode anything above ASCII to numeric HTML
-    // entities (e.g. "–" -> "&#8211;") so it stores safely; the GET endpoint
-    // decodes titles back to plain text, keeping the round-trip symmetric.
-    $title_stored = mb_encode_numericentity($title, [0x80, 0x10FFFF, 0, 0xFFFFFF], 'UTF-8');
+    // Store text meta as numeric HTML entities so multi-byte characters survive
+    // even on utf8mb3/latin1 columns; read paths decode it back to plain text.
+    $title_stored = gigio_encode_text($title);
 
     $category_id = wp_create_category(GIGIO_CATEGORY);
 
@@ -889,8 +915,8 @@ function gigio_create_event($fields, $files, $organizer = null, $posterRequired 
 
     update_post_meta($post_id, 'dtstart', $dtstart);
     update_post_meta($post_id, 'dtend', $dtend);
-    update_post_meta($post_id, 'venue', trim((string) ($fields['venue'] ?? '')));
-    update_post_meta($post_id, 'dtinfo', trim((string) ($fields['dtinfo'] ?? '')));
+    update_post_meta($post_id, 'venue', gigio_encode_text(trim((string) ($fields['venue'] ?? ''))));
+    update_post_meta($post_id, 'dtinfo', gigio_encode_text(trim((string) ($fields['dtinfo'] ?? ''))));
     update_post_meta($post_id, 'bookinglink', trim((string) ($fields['bookinglink'] ?? '')));
     update_post_meta($post_id, 'recursday', 0);
 
@@ -944,11 +970,11 @@ function gigio_event_response($post_id, $status = 200)
 {
     $response = rest_ensure_response([
         'id'          => $post_id,
-        'title'       => html_entity_decode(get_the_title($post_id), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+        'title'       => gigio_decode_text(get_the_title($post_id)),
         'start'       => gigio_iso_datetime(get_post_meta($post_id, 'dtstart', true)),
         'end'         => get_post_meta($post_id, 'dtend', true),
-        'venue'       => get_post_meta($post_id, 'venue', true),
-        'dtinfo'      => get_post_meta($post_id, 'dtinfo', true),
+        'venue'       => gigio_decode_text(get_post_meta($post_id, 'venue', true)),
+        'dtinfo'      => gigio_decode_text(get_post_meta($post_id, 'dtinfo', true)),
         'bookinglink' => get_post_meta($post_id, 'bookinglink', true),
         'approved'    => get_post_meta($post_id, 'gigio_approved', true) !== '0',
         'picture'     => get_the_post_thumbnail_url($post_id, 'full') ?: null,
@@ -1057,10 +1083,17 @@ function gigio_known_venues()
     global $wpdb;
     $rows = $wpdb->get_col(
         "SELECT DISTINCT meta_value FROM $wpdb->postmeta
-         WHERE meta_key = 'venue' AND meta_value <> ''
-         ORDER BY meta_value"
+         WHERE meta_key = 'venue' AND meta_value <> ''"
     );
-    return array_values(array_filter(array_map('trim', (array) $rows)));
+    // Decode stored entities to plain text so the dropdown reads normally, and
+    // collapse old (raw) and new (entity-encoded) spellings of the same name to
+    // a single option.
+    $venues = array_map(function ($v) {
+        return trim(gigio_decode_text($v));
+    }, (array) $rows);
+    $venues = array_values(array_unique(array_filter($venues)));
+    sort($venues, SORT_FLAG_CASE | SORT_STRING);
+    return $venues;
 }
 
 
@@ -1185,11 +1218,11 @@ function gigio_organizer_events($organizer_id)
         $id = $post->ID;
         $events[] = [
             'id'          => $id,
-            'title'       => html_entity_decode(get_the_title($id), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            'title'       => gigio_decode_text(get_the_title($id)),
             'dtstart'     => get_post_meta($id, 'dtstart', true),
             'dtend'       => get_post_meta($id, 'dtend', true),
-            'venue'       => get_post_meta($id, 'venue', true),
-            'dtinfo'      => get_post_meta($id, 'dtinfo', true),
+            'venue'       => gigio_decode_text(get_post_meta($id, 'venue', true)),
+            'dtinfo'      => gigio_decode_text(get_post_meta($id, 'dtinfo', true)),
             'bookinglink' => get_post_meta($id, 'bookinglink', true),
             'approved'    => get_post_meta($id, 'gigio_approved', true) !== '0',
             'picture'     => get_the_post_thumbnail_url($id, 'medium') ?: null,
@@ -1375,8 +1408,7 @@ function gigio_rest_organizer_update($request)
 
     $title = trim((string) $request->get_param('title'));
     if ($title !== '') {
-        $title_stored = mb_encode_numericentity($title, [0x80, 0x10FFFF, 0, 0xFFFFFF], 'UTF-8');
-        wp_update_post(['ID' => $post_id, 'post_title' => $title_stored]);
+        wp_update_post(['ID' => $post_id, 'post_title' => gigio_encode_text($title)]);
     }
 
     list($dtstart, $dtend) = gigio_resolve_event_dates(
@@ -1385,8 +1417,8 @@ function gigio_rest_organizer_update($request)
     );
     update_post_meta($post_id, 'dtstart', $dtstart);
     update_post_meta($post_id, 'dtend', $dtend);
-    update_post_meta($post_id, 'venue', trim((string) $request->get_param('venue')));
-    update_post_meta($post_id, 'dtinfo', mb_substr(trim((string) $request->get_param('dtinfo')), 0, 80));
+    update_post_meta($post_id, 'venue', gigio_encode_text(trim((string) $request->get_param('venue'))));
+    update_post_meta($post_id, 'dtinfo', gigio_encode_text(mb_substr(trim((string) $request->get_param('dtinfo')), 0, 80)));
     update_post_meta($post_id, 'bookinglink', trim((string) $request->get_param('bookinglink')));
 
     // A replacement poster is optional on edit.
