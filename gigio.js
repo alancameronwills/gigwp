@@ -60,6 +60,28 @@ function fillGigList(gigListJson, strip = false) {
         scrollStripHandler();
     }
     window.scrollTo(0, 0);
+    gigioScrollToHash();
+}
+
+/**
+ * If the page was opened with a URL fragment (e.g. the moderator email's
+ * .../#approve link pointing at the first pending flag), scroll the matching
+ * element into view. The gig list lives inside a shadow root, so the browser's
+ * native fragment scrolling can't reach it — we have to do it ourselves.
+ */
+function gigioScrollToHash() {
+    const hash = location.hash;
+    if (!hash || hash.length < 2) return;
+    let target;
+    try {
+        target = gigio(hash); // querySelector on the shadow root
+    } catch (e) {
+        return; // not a usable selector
+    }
+    if (target) {
+        // Small delay so posters have laid out before we measure the position.
+        setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "center" }), 400);
+    }
 }
 
 function rearrangeGigsByColumns(event) {
