@@ -349,7 +349,10 @@
                 '<div class="gigio-my-event-meta">' + meta + '</div>' +
                 badge +
                 '</div>' +
+                '<div class="gigio-my-event-actions">' +
                 '<button type="button" class="gigio-secondary gigio-edit-event">Edit</button>' +
+                '<button type="button" class="gigio-secondary gigio-delete-event">Delete</button>' +
+                '</div>' +
                 '</li>';
         }).join("");
 
@@ -358,6 +361,26 @@
                 var id = b.closest(".gigio-my-event").getAttribute("data-id");
                 startEdit(id);
             });
+        });
+        ul.querySelectorAll(".gigio-delete-event").forEach(function (b) {
+            b.addEventListener("click", function () {
+                var id = b.closest(".gigio-my-event").getAttribute("data-id");
+                deleteEvent(id);
+            });
+        });
+    }
+
+    function deleteEvent(id) {
+        var ev = state.events.filter(function (e) { return "" + e.id === "" + id; })[0];
+        var title = ev ? ev.title : "this event";
+        if (!window.confirm("Delete “" + title + "”? This can’t be undone.")) return;
+        setStatus("Deleting…");
+        api("/organizer/events/" + id, "DELETE").then(function () {
+            if ("" + state.editingId === "" + id) resetForm();
+            setStatus("Event deleted.", "success");
+            return refreshAfterWrite();
+        }).catch(function (err) {
+            setStatus(err.message, "error");
         });
     }
 

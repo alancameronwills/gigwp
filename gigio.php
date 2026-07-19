@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.1
+ * @version 2.9.2
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.1
+ * Version: 2.9.2
  */
 
 /*
@@ -1284,10 +1284,16 @@ add_action('rest_api_init', function () {
         'methods'  => 'POST',
         'callback' => 'gigio_rest_organizer_submit',
     ]));
-    register_rest_route('gigiau/v1', '/organizer/events/(?P<id>\d+)', array_merge($public, [
-        'methods'  => 'POST',
-        'callback' => 'gigio_rest_organizer_update',
-    ]));
+    register_rest_route('gigiau/v1', '/organizer/events/(?P<id>\d+)', [
+        array_merge($public, [
+            'methods'  => 'POST',
+            'callback' => 'gigio_rest_organizer_update',
+        ]),
+        array_merge($public, [
+            'methods'  => 'DELETE',
+            'callback' => 'gigio_rest_organizer_delete',
+        ]),
+    ]);
 });
 
 function gigio_rest_organizer_register($request)
@@ -1436,6 +1442,39 @@ function gigio_rest_organizer_update($request)
 
     gigio_queue_submission_notification($post_id, 'Update');
     return gigio_event_response($post_id, 200);
+}
+
+/**
+ * DELETE /gigiau/v1/organizer/events/{id}
+ * Delete one of the organizer's own events, along with its poster attachment(s).
+ */
+function gigio_rest_organizer_delete($request)
+{
+    $organizer = gigio_require_organizer($request);
+    if (is_wp_error($organizer)) {
+        return $organizer;
+    }
+
+    $post_id = (int) $request->get_param('id');
+    $owner   = (int) get_post_meta($post_id, 'gigio_organizer', true);
+    if (!$post_id || $owner !== (int) $organizer->id) {
+        return new WP_Error('gigio_forbidden', 'You can only delete events you submitted.', ['status' => 403]);
+    }
+
+    // Remove the poster (featured image) and any other attachments first.
+    $thumb = get_post_thumbnail_id($post_id);
+    if ($thumb) {
+        wp_delete_attachment($thumb, true);
+    }
+    foreach (get_children(['post_parent' => $post_id, 'post_type' => 'attachment', 'numberposts' => -1, 'fields' => 'ids']) as $aid) {
+        wp_delete_attachment($aid, true);
+    }
+
+    if (!wp_delete_post($post_id, true)) {
+        return new WP_Error('gigio_delete_failed', 'Could not delete the event.', ['status' => 500]);
+    }
+
+    return rest_ensure_response(['deleted' => true, 'id' => $post_id]);
 }
 
 

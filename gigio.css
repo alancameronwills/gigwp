@@ -690,7 +690,7 @@ pre {
     margin-bottom: 10px;
 }
 
-.gigo-event-form {
+.gigio-event-form {
     padding: 0 20px 40px 20px;
     background-color: whitesmoke;
     border-radius: 4px;
@@ -738,4 +738,16 @@ pre {
     background-color: #eafaf0;
     color: #1c6b3c;
     border: 1px solid #b7e4c7;
+}
+
+.gigio-my-event-actions {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+}
+
+.gigio-submit button.gigio-delete-event {
+    color: #cc0000;
 }
