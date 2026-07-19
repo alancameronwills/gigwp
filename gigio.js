@@ -150,7 +150,7 @@ function gigHtml(post) {
         if (post.pending) {
             const who = post.organizer ? ` from ${("" + post.organizer).replaceAll(/</g, "&lt;")}` : "";
             pendingflag = `<div class="gig-pending">
-                <span class="gig-pending-label">⚑ Awaiting approval${who}</span>
+                <span class="gig-pending-label" id="approve">⚑ Awaiting approval${who}</span>
                 <button class="gig-approve-button" onclick="approveGig('${post.id}')">Approve</button>
             </div>`;
         }

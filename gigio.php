@@ -1503,7 +1503,7 @@ function gigio_send_submission_notification_email()
         $start  = get_post_meta($post_id, 'dtstart', true);
         $who    = get_post_meta($post_id, 'gigio_organizer_email', true) ?: 'unknown';
         $status = get_post_meta($post_id, 'gigio_approved', true) === '0' ? 'awaiting approval' : 'approved';
-        $edit   = admin_url('post.php?post=' . $post_id . '&action=edit');
+        $edit   = get_home_url(null, "#approve");// admin_url('post.php?post=' . $post_id . '&action=edit');
 
         $lines[] = "* {$action}: \"{$title}\""
             . ($start ? " \u{2014} {$start}" : '')
