@@ -218,6 +218,8 @@
             '<input type="datetime-local" name="dtstart" required /></label>' +
             '<label class="gigio-field"><span>End date (only if it runs over several days)</span>' +
             '<input type="date" name="dtend" /></label>' +
+            '<label class="gigio-field"><span>Extra info (optional, max 80 characters)</span>' +
+            '<input type="text" name="dtinfo" maxlength="80" placeholder="e.g. 7:30pm · £5 on the door" /></label>' +
             '<label class="gigio-field"><span>Venue</span>' +
             buildVenueSelect("") +
             '<input type="text" class="gigio-new-venue" name="newvenue" placeholder="New venue name" style="display:none" />' +
@@ -291,6 +293,7 @@
         fd.append("dtend", form.dtend.value);
         var venue = form.venue.value === NEW_VENUE ? form.newvenue.value.trim() : form.venue.value;
         fd.append("venue", venue);
+        fd.append("dtinfo", form.dtinfo.value.trim().substring(0, 80));
         fd.append("bookinglink", form.bookinglink.value.trim());
         if (form.picture.files && form.picture.files[0]) {
             fd.append("picture", form.picture.files[0]);
@@ -376,6 +379,7 @@
         form.title.value = ev.title || "";
         form.dtstart.value = toDatetimeLocal(ev.dtstart);
         form.dtend.value = toDateOnly(ev.dtend) === toDateOnly(ev.dtstart) ? "" : toDateOnly(ev.dtend);
+        form.dtinfo.value = ev.dtinfo || "";
         form.bookinglink.value = ev.bookinglink || "";
 
         // Rebuild the venue select so the current venue is present and selected.

@@ -1342,7 +1342,7 @@ function gigio_rest_organizer_submit($request)
         'dtstart'     => $request->get_param('dtstart'),
         'dtend'       => $request->get_param('dtend'),
         'venue'       => $request->get_param('venue'),
-        'dtinfo'      => $request->get_param('dtinfo'),
+        'dtinfo'      => mb_substr(trim((string) $request->get_param('dtinfo')), 0, 80),
         'bookinglink' => $request->get_param('bookinglink'),
     ], $request->get_file_params(), [
         'id'    => $organizer->id,
@@ -1386,7 +1386,7 @@ function gigio_rest_organizer_update($request)
     update_post_meta($post_id, 'dtstart', $dtstart);
     update_post_meta($post_id, 'dtend', $dtend);
     update_post_meta($post_id, 'venue', trim((string) $request->get_param('venue')));
-    update_post_meta($post_id, 'dtinfo', trim((string) $request->get_param('dtinfo')));
+    update_post_meta($post_id, 'dtinfo', mb_substr(trim((string) $request->get_param('dtinfo')), 0, 80));
     update_post_meta($post_id, 'bookinglink', trim((string) $request->get_param('bookinglink')));
 
     // A replacement poster is optional on edit.
