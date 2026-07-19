@@ -666,10 +666,6 @@ pre {
     padding: 0 6px;
 }
 
-.gigio-new-venue {
-    margin-top: 8px;
-}
-
 /* Gentle hint that the start date is in the past (needs an end date today or
    later). Not a hard error — the real check happens on Submit. */
 .gigio-submit input.gigio-old-date {

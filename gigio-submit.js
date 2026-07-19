@@ -11,7 +11,6 @@
     "use strict";
 
     var root, state = { csrf: "", venues: [], events: [], organizer: null, editingId: null };
-    var NEW_VENUE = "__new__";
 
     document.addEventListener("DOMContentLoaded", init);
     // In case the script loads after DOMContentLoaded (footer + async themes):
@@ -219,10 +218,9 @@
             '<label class="gigio-field"><span>End date (only if it runs over several days)</span>' +
             '<input type="date" name="dtend" /></label>' +
             '<label class="gigio-field"><span>Extra info (optional, max 80 characters)</span>' +
-            '<input type="text" name="dtinfo" maxlength="80" placeholder="e.g. 7:30pm · £5 on the door" /></label>' +
+            '<input type="text" name="dtinfo" maxlength="80" placeholder="e.g. finish 10pm. £5 on the door" /></label>' +
             '<label class="gigio-field"><span>Venue</span>' +
-            buildVenueSelect("") +
-            '<input type="text" class="gigio-new-venue" name="newvenue" placeholder="New venue name" style="display:none" />' +
+            buildVenueInput("") +
             '</label>' +
             '<label class="gigio-field"><span>More info / booking link (optional)</span>' +
             '<input type="url" name="bookinglink" placeholder="https://…" /></label>' +
@@ -245,13 +243,6 @@
         });
 
         var form = el(".gigio-event-form");
-        var select = form.querySelector('select[name="venue"]');
-        var newVenue = form.querySelector(".gigio-new-venue");
-        select.addEventListener("change", function () {
-            var isNew = select.value === NEW_VENUE;
-            newVenue.style.display = isNew ? "block" : "none";
-            if (isNew) newVenue.focus();
-        });
         el(".gigio-cancel-edit").addEventListener("click", function () { resetForm(); });
 
         // Gently flag an old start date (red outline) so the organizer knows to
@@ -265,15 +256,17 @@
         renderMyEvents();
     }
 
-    function buildVenueSelect(selected) {
-        var venues = state.venues.slice();
-        if (selected && venues.indexOf(selected) < 0) venues.unshift(selected);
-        var opts = '<option value="">— choose a venue —</option>';
-        venues.forEach(function (v) {
-            opts += '<option value="' + esc(v) + '"' + (v === selected ? " selected" : "") + ">" + esc(v) + "</option>";
-        });
-        opts += '<option value="' + NEW_VENUE + '">➕ Add a new venue…</option>';
-        return '<select name="venue">' + opts + "</select>";
+    // Autocomplete text input backed by a datalist of known venues: the organizer
+    // types, gets matching suggestions to complete with Tab/Enter, or just types
+    // a new name. No forced selection from a list.
+    function buildVenueInput(selected) {
+        var options = state.venues.map(function (v) {
+            return '<option value="' + esc(v) + '"></option>';
+        }).join("");
+        return '<input type="text" name="venue" list="gigio-venue-list" autocomplete="off"' +
+            ' placeholder="Start typing to find a venue, or type a new name"' +
+            ' value="' + esc(selected || "") + '" />' +
+            '<datalist id="gigio-venue-list">' + options + '</datalist>';
     }
 
     function onSubmitEvent(e) {
@@ -291,8 +284,7 @@
         fd.append("title", form.title.value.trim());
         fd.append("dtstart", form.dtstart.value);
         fd.append("dtend", form.dtend.value);
-        var venue = form.venue.value === NEW_VENUE ? form.newvenue.value.trim() : form.venue.value;
-        fd.append("venue", venue);
+        fd.append("venue", form.venue.value.trim());
         fd.append("dtinfo", form.dtinfo.value.trim().substring(0, 80));
         fd.append("bookinglink", form.bookinglink.value.trim());
         if (form.picture.files && form.picture.files[0]) {
@@ -330,7 +322,6 @@
         if (!form) return;
         form.reset();
         form.dtstart.classList.remove("gigio-old-date");
-        form.querySelector(".gigio-new-venue").style.display = "none";
         el(".gigio-form-heading").textContent = "Submit an event";
         form.querySelector(".gigio-submit-btn").textContent = "Submit for approval";
         form.querySelector(".gigio-submit-btn").disabled = false;
@@ -381,17 +372,7 @@
         form.dtend.value = toDateOnly(ev.dtend) === toDateOnly(ev.dtstart) ? "" : toDateOnly(ev.dtend);
         form.dtinfo.value = ev.dtinfo || "";
         form.bookinglink.value = ev.bookinglink || "";
-
-        // Rebuild the venue select so the current venue is present and selected.
-        var newVenueInput = form.querySelector(".gigio-new-venue");
-        form.querySelector('select[name="venue"]').outerHTML = buildVenueSelect(ev.venue || "");
-        var select = form.querySelector('select[name="venue"]');
-        newVenueInput.style.display = "none";
-        select.addEventListener("change", function () {
-            var isNew = select.value === NEW_VENUE;
-            newVenueInput.style.display = isNew ? "block" : "none";
-            if (isNew) newVenueInput.focus();
-        });
+        form.venue.value = ev.venue || "";
 
         // On edit the existing poster is kept unless a new one is chosen.
         var picture = form.querySelector('input[name="picture"]');
