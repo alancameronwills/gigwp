@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.8.2
+ * @version 2.9
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.8.2
+ * Version: 2.9
  */
 
 /*
@@ -71,7 +71,10 @@ function gigio_install()
 {
     gigio_ensure_tables();
 }
-function gigio_deactivate() {}
+function gigio_deactivate()
+{
+    wp_clear_scheduled_hook('gigio_send_submission_notification');
+}
 function gigio_uninstall() {}
 register_activation_hook(__FILE__, 'gigio_install');
 register_deactivation_hook(__FILE__, 'gigio_deactivate');
@@ -1385,6 +1388,7 @@ function gigio_rest_organizer_submit($request)
     if (is_wp_error($post_id)) {
         return $post_id;
     }
+    gigio_queue_submission_notification($post_id, 'New submission');
     return gigio_event_response($post_id, 201);
 }
 
@@ -1430,7 +1434,96 @@ function gigio_rest_organizer_update($request)
     // Editing sends the event back to pending so the admin re-checks it.
     update_post_meta($post_id, 'gigio_approved', '0');
 
+    gigio_queue_submission_notification($post_id, 'Update');
     return gigio_event_response($post_id, 200);
+}
+
+
+// ************ Submission notifications ***********
+//
+// Email a moderator whenever an organizer submits or edits an event. To avoid a
+// spate of messages when someone makes a series of edits, the send is batched:
+// each change (re)schedules a single WP-Cron event 15 minutes out and records
+// the affected event, so one summary email goes out once the organizer has been
+// quiet for 15 minutes. WP-Cron fires on site traffic (or a real system cron),
+// so delivery depends on the site being visited after the delay. Actual sending
+// also depends on the site's wp_mail/SMTP configuration.
+
+define('GIGIO_NOTIFY_EMAIL', 'info@gigiau.uk');
+define('GIGIO_NOTIFY_HOOK', 'gigio_send_submission_notification');
+define('GIGIO_NOTIFY_OPTION', 'gigio_pending_notify');
+
+add_action(GIGIO_NOTIFY_HOOK, 'gigio_send_submission_notification_email');
+
+/**
+ * Record that one event was submitted/updated and (re)schedule the batched send
+ * 15 minutes from now. Rescheduling on every change debounces a burst of edits
+ * into a single email.
+ *
+ * @param int    $post_id
+ * @param string $action  'New submission' or 'Update' (a new event stays "New
+ *                        submission" even if edited again within the batch).
+ */
+function gigio_queue_submission_notification($post_id, $action)
+{
+    $queue = get_option(GIGIO_NOTIFY_OPTION, []);
+    if (!is_array($queue)) {
+        $queue = [];
+    }
+    $existing = $queue[$post_id] ?? '';
+    $queue[$post_id] = ($existing === 'New submission') ? 'New submission' : $action;
+    update_option(GIGIO_NOTIFY_OPTION, $queue, false);
+
+    // Debounce: drop any pending send and schedule a fresh one 15 minutes out.
+    wp_clear_scheduled_hook(GIGIO_NOTIFY_HOOK);
+    wp_schedule_single_event(time() + 15 * MINUTE_IN_SECONDS, GIGIO_NOTIFY_HOOK);
+}
+
+/**
+ * WP-Cron callback: email a summary of the batch of events submitted or updated,
+ * then clear the queue. The queue is cleared before sending so a cron double-run
+ * can't send the same batch twice; anything that arrives mid-send starts a fresh
+ * batch.
+ */
+function gigio_send_submission_notification_email()
+{
+    $queue = get_option(GIGIO_NOTIFY_OPTION, []);
+    if (empty($queue) || !is_array($queue)) {
+        return;
+    }
+    delete_option(GIGIO_NOTIFY_OPTION);
+
+    $lines = [];
+    foreach ($queue as $post_id => $action) {
+        if (!get_post($post_id)) {
+            continue; // deleted since it was queued
+        }
+        $title  = gigio_decode_text(get_the_title($post_id));
+        $venue  = gigio_decode_text(get_post_meta($post_id, 'venue', true));
+        $start  = get_post_meta($post_id, 'dtstart', true);
+        $who    = get_post_meta($post_id, 'gigio_organizer_email', true) ?: 'unknown';
+        $status = get_post_meta($post_id, 'gigio_approved', true) === '0' ? 'awaiting approval' : 'approved';
+        $edit   = admin_url('post.php?post=' . $post_id . '&action=edit');
+
+        $lines[] = "* {$action}: \"{$title}\""
+            . ($start ? " \u{2014} {$start}" : '')
+            . ($venue ? " @ {$venue}" : '') . "\n"
+            . "    by {$who}  ({$status})\n"
+            . "    Review: {$edit}";
+    }
+
+    $count = count($lines);
+    if ($count === 0) {
+        return;
+    }
+
+    $subject = sprintf('[Gigiau] %d event%s submitted or updated', $count, $count === 1 ? '' : 's');
+    $body = 'The following event' . ($count === 1 ? ' was' : 's were')
+        . ' submitted or updated on Gigiau and ' . ($count === 1 ? 'is' : 'are') . " awaiting approval:\n\n"
+        . implode("\n\n", $lines)
+        . "\n\nApprove them on your events listings page (red flag \u{2192} Approve), or open the review links above.\n";
+
+    wp_mail(GIGIO_NOTIFY_EMAIL, $subject, $body);
 }
 
 
