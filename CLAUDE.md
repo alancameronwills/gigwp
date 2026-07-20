@@ -24,7 +24,7 @@ Gigiau Events Posters is a WordPress plugin that displays event posters on a lis
 5. Shadow DOM (`class="gigio-capsule"`) encapsulates styles from theme conflicts
 
 ### Key Patterns
-- **Shortcodes**: `[gigiau]` (listings, parameters like `layout`, `width`, `height`, `strip`, `align`, `background`) and `[gigiau_submit]` (organizer submission page)
+- **Shortcodes**: `[gigiau]` (listings, parameters like `layout`, `width`, `height`, `strip`, `align`, `background`, `notadmin`) and `[gigiau_submit]` (organizer submission page)
 - **Post metadata fields**: `dtstart`, `dtend`, `dtinfo`, `venue`, `recursday`, `recursweeks`, `recursfortnight`, `booklabel`, `bookinglink`, `locallink`; plus moderation fields `gigio_approved` (`'0'` = pending, `'1'`/absent = approved), `gigio_organizer` (organizer row id), `gigio_organizer_email`
 - **Post content**: Displays as truncated plain text (HTML stripped); in edit mode, clicking opens WordPress post editor
 - **Recurrence**: Supports weekly (nth week of month) and fortnightly patterns via `recursday`/`recursweeks`/`recursfortnight` fields
@@ -67,5 +67,6 @@ Key parameters for `[gigiau]`:
 - `width`/`height` - Poster dimensions in pixels
 - `background` - CSS color value
 - `venueinfilename` - Parse venue from filename instead of extra info
+- `notadmin=<url>` - If set and the visitor is not logged into WordPress, the listing renders nothing but a script that `window.location.replace(<url>)` — a client-side redirect that leaves no browser-history entry. Logged-in users are unaffected. Note: this is a soft gate (the redirect runs after the page body has started), not server-side access control.
 
 `[gigiau_submit]` takes no parameters; place it on a page for organizers to submit events.

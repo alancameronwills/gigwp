@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.2
+ * @version 2.9.3
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.2
+ * Version: 2.9.3
  */
 
 /*
@@ -145,10 +145,19 @@ function gigio_events_list_shortcode($attributes = [])
             'max' => 0, // max count of items; typically use with strip
             'background' => "whitesmoke",
             'headercolor' => "#101060",
-            'venueinfilename' => false // Poster filename format: Title YYYY-MM-DD[-YYYY-MM-DD] [Extra info | Venue]
+            'venueinfilename' => false, // Poster filename format: Title YYYY-MM-DD[-YYYY-MM-DD] [Extra info | Venue]
+            'notadmin' => "" // If set, redirect non-logged-in visitors to this URL (replacing history)
         ],
         $attributes
     ));
+
+    // Gate the whole listing behind a WordPress login: visitors who are not logged
+    // in get bounced to the given URL. location.replace() means the current page is
+    // not left in the browser history, so Back won't return here.
+    if ($notadmin && !is_user_logged_in()) {
+        $redirect = esc_url_raw($notadmin);
+        return "<script>window.location.replace(" . json_encode($redirect) . ");</script>";
+    }
 
     $valid_width = ($width && $width > 30 && $width < 1000 ? $width : ($strip ? 270 : 340));
     $valid_height = ($height && $height > 30 && $height < 2000 ? $height : floor(1.42 * $valid_width));
