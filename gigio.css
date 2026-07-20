@@ -545,6 +545,85 @@ pre {
     border: 1px solid white;
 }
 
+.gig-pending-buttons {
+    display: flex;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+.giglist button.gig-reject-button {
+    background-color: transparent;
+    color: white;
+    border: 1px solid white;
+    font-weight: bold;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.giglist button.gig-reject-button:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+    border: 1px solid white;
+}
+
+/* Rejected event (admin only): grey flag instead of red. Placed after the
+   .gig:has(.gig-pending) rule so it wins for a rejected gig (which carries
+   both classes). */
+.gig:has(.gig-rejected) {
+    border-color: #666;
+    box-shadow: 0 0 0 2px #666;
+}
+
+.gig-pending.gig-rejected {
+    background-color: #666;
+}
+
+/* Fixed banner shown at the top of the window while any event awaits approval
+   (admin only). Clicking it scrolls the first pending event into view. */
+.gigio-pending-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 99999;
+    background-color: #cc0000;
+    color: white;
+    text-align: center;
+    padding: 10px 16px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.gigio-pending-banner:hover {
+    background-color: #b00000;
+}
+
+/* Transient toast (e.g. "Copied organizer email…" after Reject) */
+.gigio-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translate(-50%, 12px);
+    z-index: 100000;
+    max-width: 90vw;
+    background-color: #222;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+}
+
+.gigio-toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
 /* ***** Submission page ([gigiau_submit]) ***** */
 
 .gigio-submit {
@@ -738,6 +817,12 @@ pre {
     background-color: #eafaf0;
     color: #1c6b3c;
     border: 1px solid #b7e4c7;
+}
+
+.gigio-status-badge.rejected {
+    background-color: #fdecea;
+    color: #a12622;
+    border: 1px solid #f5c2c0;
 }
 
 .gigio-my-event-actions {

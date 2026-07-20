@@ -517,9 +517,9 @@ function gigTemplateEditingMap(post, map) {
 }
 
 /**
- * Admin clicked Approve on a pending (organizer-submitted) gig.
- * Clears the gigio_approved flag via the same meta-save path the editor uses,
- * so the event becomes public. Removes the red flag on success.
+ * Admin clicked Approve on a pending or rejected (organizer-submitted) gig.
+ * Sets gigio_approved = '1' via the same meta-save path the editor uses, so the
+ * event becomes public. Removes the flag on success.
  * @param {*} id Post id
  */
 function approveGig(id) {
@@ -529,9 +529,50 @@ function approveGig(id) {
     post.save().done(function () {
         threadFlag(-1);
         gig?.querySelector(".gig-pending")?.remove();
+        if (window.gigioUpdatePendingBanner) gigioUpdatePendingBanner();
     }).fail(function (xhr) {
         threadFlag(-1);
         alert("Could not approve event: " + (xhr?.responseJSON?.message || xhr?.statusText || "error"));
+    });
+}
+
+/**
+ * Admin clicked Reject on a pending (organizer-submitted) gig.
+ * Sets gigio_approved = '2', so the event stays out of the public listing and
+ * the JSON export but remains visible (flagged grey) to signed-in admins. The
+ * flag is rewritten in place to the rejected form on success.
+ * @param {*} id Post id
+ */
+function rejectGig(id) {
+    const gig = gigio(`.gig[data-id="${id}"]`);
+    // Copy the organizer's email now, while we're still inside the click gesture
+    // (so the browser accepts the clipboard write), and confirm with a toast.
+    const email = gig?.querySelector(".gig-pending")?.dataset.organizer || "";
+    if (window.gigioCopyToClipboard && email) {
+        gigioCopyToClipboard(email);
+        gigioToast(`Copied organizer email: ${email}`);
+    }
+    threadFlag(1);
+    const post = new wp.api.models.Post({ id: id, meta: { gigio_approved: "2" } });
+    post.save().done(function () {
+        threadFlag(-1);
+        const flag = gig?.querySelector(".gig-pending");
+        if (flag) {
+            flag.classList.add("gig-rejected");
+            const label = flag.querySelector(".gig-pending-label");
+            if (label) {
+                label.textContent = label.textContent.replace("Awaiting approval", "Rejected");
+                label.removeAttribute("id"); // no longer an #approve scroll target
+            }
+            const buttons = flag.querySelector(".gig-pending-buttons");
+            if (buttons) {
+                buttons.innerHTML = `<button class="gig-approve-button" onclick="approveGig('${id}')">Approve</button>`;
+            }
+        }
+        if (window.gigioUpdatePendingBanner) gigioUpdatePendingBanner();
+    }).fail(function (xhr) {
+        threadFlag(-1);
+        alert("Could not reject event: " + (xhr?.responseJSON?.message || xhr?.statusText || "error"));
     });
 }
 

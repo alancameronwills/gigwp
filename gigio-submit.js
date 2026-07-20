@@ -487,9 +487,11 @@
             return;
         }
         ul.innerHTML = state.events.map(function (ev) {
-            var badge = ev.approved
-                ? '<span class="gigio-status-badge approved">Approved</span>'
-                : '<span class="gigio-status-badge pending">Awaiting approval</span>';
+            var badge = ev.rejected
+                ? '<span class="gigio-status-badge rejected">Rejected</span>'
+                : ev.approved
+                    ? '<span class="gigio-status-badge approved">Approved</span>'
+                    : '<span class="gigio-status-badge pending">Awaiting approval</span>';
             var meta = [friendly(ev.dtstart), ev.venue].filter(Boolean).map(esc).join(" · ");
             return '<li class="gigio-my-event" data-id="' + ev.id + '">' +
                 (ev.picture ? '<img src="' + esc(ev.picture) + '" alt="" />' : '<img alt="" />') +

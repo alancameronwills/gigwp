@@ -60,7 +60,86 @@ function fillGigList(gigListJson, strip = false) {
         scrollStripHandler();
     }
     window.scrollTo(0, 0);
+    gigioUpdatePendingBanner();
     gigioScrollToHash();
+}
+
+/**
+ * Show/hide a fixed red banner at the top of the window while any event is
+ * awaiting approval (admin only — pending events never reach other visitors).
+ * Clicking the banner scrolls the first pending event into view. The banner
+ * lives inside the shadow root alongside the list, and its count is read from
+ * the DOM so it stays correct after an individual approve/reject too. Rejected
+ * events don't count towards the banner.
+ */
+function gigioUpdatePendingBanner() {
+    const root = window.gigioCapsuleRoot;
+    if (!root) return;
+    let banner = root.querySelector(".gigio-pending-banner");
+    const pendingCount = root.querySelectorAll(".gig-pending:not(.gig-rejected)").length;
+    if (!pendingCount) {
+        if (banner) banner.remove();
+        return;
+    }
+    if (!banner) {
+        banner = document.createElement("div");
+        banner.className = "gigio-pending-banner";
+        banner.setAttribute("role", "button");
+        banner.tabIndex = 0;
+        banner.addEventListener("click", gigioScrollToPending);
+        root.appendChild(banner);
+    }
+    const noun = pendingCount === 1 ? "event is" : "events are";
+    banner.textContent = `⚑ ${pendingCount} ${noun} awaiting approval — click to review`;
+}
+
+/** Scroll the first pending (not rejected) event flag into view. */
+function gigioScrollToPending() {
+    const target = gigio(".gig-pending:not(.gig-rejected)");
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/**
+ * Briefly show a small toast message inside the capsule (shadow root), then
+ * fade it out. Used e.g. to confirm the organizer's email was copied on reject.
+ */
+function gigioToast(message) {
+    const root = window.gigioCapsuleRoot;
+    if (!root) return;
+    const toast = document.createElement("div");
+    toast.className = "gigio-toast";
+    toast.textContent = message;
+    root.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add("show"));
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
+}
+
+/**
+ * Copy text to the clipboard, with a fallback for non-secure contexts where the
+ * async Clipboard API isn't available. Returns a promise resolving true/false.
+ * Call this synchronously from a click handler so the browser accepts it.
+ */
+function gigioCopyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text).then(() => true, () => false);
+    }
+    try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand("copy");
+        ta.remove();
+        return Promise.resolve(ok);
+    } catch (e) {
+        return Promise.resolve(false);
+    }
 }
 
 /**
@@ -165,15 +244,28 @@ function gigHtml(post) {
             contentText = contentText.replace(/\n\s*\n/g, "\n").trim();
         }
 
-        // Events awaiting approval (submitted via [gigiau_submit]) only reach the
-        // admin. Show a red flag + Approve button. The %pendingflag slot only
-        // exists in the admin template, so non-admins never see it.
+        // Events awaiting approval or rejected (submitted via [gigiau_submit]) only
+        // reach the admin. Pending shows a red flag + Approve/Reject buttons; rejected
+        // shows a grey flag + Approve (to restore). The %pendingflag slot only exists
+        // in the admin template, so non-admins never see it.
         let pendingflag = "";
+        const orgText = ("" + (post.organizer || "")).replaceAll(/</g, "&lt;");
+        const orgAttr = orgText.replaceAll(/"/g, "&quot;");
+        const who = post.organizer ? ` from ${orgText}` : "";
         if (post.pending) {
-            const who = post.organizer ? ` from ${("" + post.organizer).replaceAll(/</g, "&lt;")}` : "";
-            pendingflag = `<div class="gig-pending">
+            pendingflag = `<div class="gig-pending" data-organizer="${orgAttr}">
                 <span class="gig-pending-label" id="approve">⚑ Awaiting approval${who}</span>
-                <button class="gig-approve-button" onclick="approveGig('${post.id}')">Approve</button>
+                <span class="gig-pending-buttons">
+                    <button class="gig-approve-button" onclick="approveGig('${post.id}')">Approve</button>
+                    <button class="gig-reject-button" onclick="rejectGig('${post.id}')">Reject</button>
+                </span>
+            </div>`;
+        } else if (post.rejected) {
+            pendingflag = `<div class="gig-pending gig-rejected" data-organizer="${orgAttr}">
+                <span class="gig-pending-label">⚑ Rejected${who}</span>
+                <span class="gig-pending-buttons">
+                    <button class="gig-approve-button" onclick="approveGig('${post.id}')">Approve</button>
+                </span>
             </div>`;
         }
 

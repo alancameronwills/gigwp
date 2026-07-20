@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.6
+ * @version 2.9.7
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.6
+ * Version: 2.9.7
  */
 
 /*
@@ -243,20 +243,23 @@ function gigio_gig_list($p)
 
 /**
  * @param (bool) $includePending When false (public/JSON), exclude events awaiting
- *        approval (meta gigio_approved = '0'). Only the admin listing passes true.
+ *        approval (meta gigio_approved = '0') and rejected events ('2'). Only the
+ *        admin listing passes true.
  */
 function gigio_get_gigs_with_recurs($fromDate, $category, $includePending = false)
 {
     global $wpdb;
 
-    // Events submitted through [gigiau_submit] carry gigio_approved = '0' until
-    // an admin approves them. Everything else (no meta, or '1') is public.
+    // Events submitted through [gigiau_submit] carry gigio_approved = '0' (pending)
+    // until an admin approves ('1') or rejects ('2') them. Pending AND rejected
+    // events are kept out of the public listing and JSON export; everything else
+    // (no meta, or '1') is public. The admin listing ($includePending) sees all.
     $approvalGate = $includePending ? "" : "
         AND NOT EXISTS (
             SELECT 1 FROM $wpdb->postmeta pmx
             WHERE pmx.post_id = p.ID
             AND pmx.meta_key = 'gigio_approved'
-            AND pmx.meta_value = '0'
+            AND pmx.meta_value IN ('0', '2')
         )";
 
     // dtend > now || recursday > 0 && dtend = dtstart
@@ -337,11 +340,12 @@ function gigio_get_gigs($fromDate, $category, $postIds = [])
             'content' => get_the_content(),
             'smallpic' => get_the_post_thumbnail_url(null, "medium"),
             'pic' => get_the_post_thumbnail_url(null, "full"),
-            // Awaiting admin approval? (submitted via [gigiau_submit]). The public
-            // query already filters these out; the admin listing keeps them so it
-            // can show a red flag + Approve button. The organizer's email is only
-            // exposed to admins (never in public/JSON output).
+            // Moderation state (submitted via [gigiau_submit]). The public query
+            // already filters pending/rejected out; the admin listing keeps them so
+            // it can show a red flag + Approve/Reject buttons. The organizer's email
+            // is only exposed to admins (never in public/JSON output).
             'pending' => (get_post_meta($id, 'gigio_approved', true) === '0'),
+            'rejected' => (get_post_meta($id, 'gigio_approved', true) === '2'),
             'organizer' => current_user_can('edit_others_pages')
                 ? (get_post_meta($id, 'gigio_organizer_email', true) ?: '')
                 : '',
@@ -998,7 +1002,8 @@ function gigio_event_response($post_id, $status = 200)
         'venue'       => gigio_decode_text(get_post_meta($post_id, 'venue', true)),
         'dtinfo'      => gigio_decode_text(get_post_meta($post_id, 'dtinfo', true)),
         'bookinglink' => get_post_meta($post_id, 'bookinglink', true),
-        'approved'    => get_post_meta($post_id, 'gigio_approved', true) !== '0',
+        'approved'    => !in_array(get_post_meta($post_id, 'gigio_approved', true), ['0', '2'], true),
+        'rejected'    => get_post_meta($post_id, 'gigio_approved', true) === '2',
         'picture'     => get_the_post_thumbnail_url($post_id, 'full') ?: null,
         'link'        => get_permalink($post_id),
     ]);
@@ -1254,7 +1259,8 @@ function gigio_organizer_events($organizer_id)
             'venue'       => gigio_decode_text(get_post_meta($id, 'venue', true)),
             'dtinfo'      => gigio_decode_text(get_post_meta($id, 'dtinfo', true)),
             'bookinglink' => get_post_meta($id, 'bookinglink', true),
-            'approved'    => get_post_meta($id, 'gigio_approved', true) !== '0',
+            'approved'    => !in_array(get_post_meta($id, 'gigio_approved', true), ['0', '2'], true),
+            'rejected'    => get_post_meta($id, 'gigio_approved', true) === '2',
             'picture'     => get_the_post_thumbnail_url($id, 'medium') ?: null,
         ];
     }

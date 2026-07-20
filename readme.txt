@@ -81,7 +81,7 @@ You can let event organizers add their own events without giving them WordPress 
 3. They upload a **poster** image and submit.
 4. They can see the events they've submitted and **edit** them at any time.
 
-**Approving submissions:** a submitted event does not appear on your public listings page, and is left out of any export, until you approve it. Signed in to WordPress as an admin, open your `[gigiau]` listings page: submitted events show there with a red **Awaiting approval** flag and an **Approve** button. Click **Approve** to publish it. If an organizer edits an event you already approved, it goes back to awaiting approval so you can re-check it.
+**Approving submissions:** a submitted event does not appear on your public listings page, and is left out of any export, until you approve it. Signed in to WordPress as an admin, open your `[gigiau]` listings page: while anything is waiting, a red banner across the top of the window tells you how many events are awaiting approval, and clicking it jumps to the first one. Submitted events show with a red **Awaiting approval** flag and **Approve** and **Reject** buttons. Click **Approve** to publish it, or **Reject** to keep it off the public page and out of any export. A rejected event stays visible to you (flagged grey) with an **Approve** button so you can restore it. If an organizer edits an event you already approved, it goes back to awaiting approval so you can re-check it.
 
 **Dates:** an organizer's start date may be in the past only if the end date is today or later (for an event that is already running). Otherwise a current date is required.
 
