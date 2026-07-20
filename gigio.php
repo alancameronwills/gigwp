@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.3
+ * @version 2.9.4
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.3
+ * Version: 2.9.4
  */
 
 /*
@@ -153,8 +153,9 @@ function gigio_events_list_shortcode($attributes = [])
 
     // Gate the whole listing behind a WordPress login: visitors who are not logged
     // in get bounced to the given URL. location.replace() means the current page is
-    // not left in the browser history, so Back won't return here.
-    if ($notadmin && !is_user_logged_in()) {
+    // not left in the browser history, so Back won't return here. The ?json feed is
+    // exempt so external/non-logged-in consumers can still read the listing as JSON.
+    if ($notadmin && !is_user_logged_in() && !isset($_GET['json'])) {
         $redirect = esc_url_raw($notadmin);
         return "<script>window.location.replace(" . json_encode($redirect) . ");</script>";
     }
