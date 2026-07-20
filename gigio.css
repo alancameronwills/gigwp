@@ -751,3 +751,13 @@ pre {
 .gigio-submit button.gigio-delete-event {
     color: #cc0000;
 }
+
+.gigio-account {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #ddd;
+}
+
+.gigio-account .gigio-change-pw-form {
+    max-width: 320px;
+}

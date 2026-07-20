@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.5
+ * @version 2.9.6
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.5
+ * Version: 2.9.6
  */
 
 /*
@@ -1129,10 +1129,18 @@ function gigio_known_venues()
 
 define('GIGIO_SESSION_COOKIE', 'gigio_session');
 define('GIGIO_SESSION_TTL', 30 * DAY_IN_SECONDS);
+// How long a "forgot password" one-time sign-in link stays valid.
+define('GIGIO_LOGIN_LINK_TTL', 2 * HOUR_IN_SECONDS);
 
 function gigio_session_transient_key($token)
 {
     return 'gigio_sess_' . hash('sha256', $token);
+}
+
+/** Transient key holding the organizer id for a one-time sign-in link token. */
+function gigio_login_link_key($token)
+{
+    return 'gigio_pwlink_' . hash('sha256', $token);
 }
 
 /**
@@ -1295,6 +1303,18 @@ add_action('rest_api_init', function () {
         'methods'  => 'POST',
         'callback' => 'gigio_rest_organizer_logout',
     ]));
+    register_rest_route('gigiau/v1', '/organizer/forgot', array_merge($public, [
+        'methods'  => 'POST',
+        'callback' => 'gigio_rest_organizer_forgot',
+    ]));
+    register_rest_route('gigiau/v1', '/organizer/magic-login', array_merge($public, [
+        'methods'  => 'POST',
+        'callback' => 'gigio_rest_organizer_magic_login',
+    ]));
+    register_rest_route('gigiau/v1', '/organizer/password', array_merge($public, [
+        'methods'  => 'POST',
+        'callback' => 'gigio_rest_organizer_password',
+    ]));
     register_rest_route('gigiau/v1', '/organizer/session', array_merge($public, [
         'methods'  => 'GET',
         'callback' => 'gigio_rest_organizer_session',
@@ -1333,7 +1353,7 @@ function gigio_rest_organizer_register($request)
     $table = gigio_organizers_table();
     $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE email = %s", $email));
     if ($exists) {
-        return new WP_Error('gigio_email_taken', 'An account with that email already exists — try signing in.', ['status' => 409]);
+        return new WP_Error('gigio_email_taken', 'We already know that email — try signing in.', ['status' => 409]);
     }
 
     $ok = $wpdb->insert($table, [
@@ -1374,6 +1394,153 @@ function gigio_rest_organizer_logout($request)
 {
     gigio_end_session();
     return rest_ensure_response(['signedIn' => false]);
+}
+
+/**
+ * "Forgot password": email the organizer a one-time sign-in link. We always
+ * respond the same way whether or not the address is on file, so the form
+ * doesn't reveal who has an account. Security here is deliberately light — the
+ * link is a short-lived, single-use bearer token (see GIGIO_LOGIN_LINK_TTL).
+ */
+function gigio_rest_organizer_forgot($request)
+{
+    gigio_ensure_tables();
+    $email = strtolower(trim((string) $request->get_param('email')));
+    if (!is_email($email)) {
+        return new WP_Error('gigio_bad_email', 'Please enter a valid email address.', ['status' => 400]);
+    }
+
+    global $wpdb;
+    $table = gigio_organizers_table();
+    $row = $wpdb->get_row(
+        $wpdb->prepare("SELECT id, email, name FROM $table WHERE email = %s", $email)
+    );
+
+    if ($row) {
+        $token = bin2hex(random_bytes(32));
+        set_transient(gigio_login_link_key($token), (int) $row->id, GIGIO_LOGIN_LINK_TTL);
+        gigio_send_login_link_email($row, gigio_login_link_url($request->get_param('page'), $token));
+    }
+
+    return rest_ensure_response(['ok' => true]);
+}
+
+/**
+ * Consume a one-time sign-in link token: if it's still valid, delete it (so it
+ * can't be reused) and open a session for that organizer.
+ */
+function gigio_rest_organizer_magic_login($request)
+{
+    gigio_ensure_tables();
+    $token = (string) $request->get_param('token');
+    $expired = new WP_Error(
+        'gigio_link_expired',
+        'This sign-in link has expired or already been used. Please request a new one.',
+        ['status' => 400]
+    );
+    if ($token === '') {
+        return $expired;
+    }
+
+    $key = gigio_login_link_key($token);
+    $organizer_id = get_transient($key);
+    if (!$organizer_id) {
+        return $expired;
+    }
+    delete_transient($key); // one-time use
+
+    global $wpdb;
+    $table = gigio_organizers_table();
+    $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE id = %d", (int) $organizer_id));
+    if (!$exists) {
+        return $expired;
+    }
+
+    $csrf = gigio_start_session((int) $organizer_id);
+    return gigio_session_payload((int) $organizer_id, $csrf);
+}
+
+/**
+ * Change the signed-in organizer's password. Requires a valid session + CSRF
+ * (via gigio_require_organizer); no current password is asked for, since the
+ * organizer may have arrived via a one-time sign-in link. The existing session
+ * stays valid.
+ */
+function gigio_rest_organizer_password($request)
+{
+    $organizer = gigio_require_organizer($request);
+    if (is_wp_error($organizer)) {
+        return $organizer;
+    }
+
+    $password = (string) $request->get_param('password');
+    if (strlen($password) < 8) {
+        return new WP_Error('gigio_weak_password', 'Password must be at least 8 characters.', ['status' => 400]);
+    }
+
+    global $wpdb;
+    $table = gigio_organizers_table();
+    $ok = $wpdb->update(
+        $table,
+        ['password_hash' => password_hash($password, PASSWORD_DEFAULT)],
+        ['id' => (int) $organizer->id]
+    );
+    if ($ok === false) {
+        return new WP_Error('gigio_password_failed', 'Could not update your password.', ['status' => 500]);
+    }
+
+    return rest_ensure_response(['ok' => true]);
+}
+
+/**
+ * Build the URL for a one-time sign-in link. Prefer the submit page the request
+ * came from (client-supplied), but only trust it if it's on this site; otherwise
+ * fall back to finding the [gigiau_submit] page. Token goes in ?gigio_login=.
+ */
+function gigio_login_link_url($page, $token)
+{
+    $base      = esc_url_raw((string) $page);
+    $home_host = wp_parse_url(home_url(), PHP_URL_HOST);
+    $page_host = $base ? wp_parse_url($base, PHP_URL_HOST) : '';
+    if (!$base || $page_host !== $home_host) {
+        $base = gigio_submit_page_url();
+    }
+    return add_query_arg('gigio_login', $token, $base);
+}
+
+/** Best guess at the public URL of the page carrying the [gigiau_submit] shortcode. */
+function gigio_submit_page_url()
+{
+    static $url = null;
+    if ($url !== null) {
+        return $url;
+    }
+    global $wpdb;
+    $ids = $wpdb->get_col(
+        "SELECT ID FROM $wpdb->posts
+         WHERE post_status = 'publish'
+         AND post_type IN ('page','post')
+         AND post_content LIKE '%[gigiau_submit%'
+         ORDER BY (post_type = 'page') DESC, ID ASC"
+    );
+    foreach ($ids as $id) {
+        if (has_shortcode(get_post_field('post_content', $id), 'gigiau_submit')) {
+            return $url = get_permalink($id);
+        }
+    }
+    return $url = get_home_url(null, '/');
+}
+
+function gigio_send_login_link_email($organizer, $url)
+{
+    $name = trim((string) $organizer->name) !== '' ? $organizer->name : 'there';
+    $subject = 'Your Gigiau sign-in link';
+    $body = "Hi {$name},\n\n"
+        . "Someone (hopefully you) asked for a sign-in link for Gigiau.\n"
+        . "Click below to sign in — the link works once and expires in two hours:\n\n"
+        . $url . "\n\n"
+        . "If you didn't ask for this, just ignore this email; your account is unchanged.\n";
+    wp_mail($organizer->email, $subject, $body);
 }
 
 function gigio_rest_organizer_session($request)

@@ -28,6 +28,15 @@
         state.restBase = (config.restBase || "").replace(/\/$/, "");
         state.venues = config.venues || [];
 
+        // Arriving via a "forgot password" email link? Consume the one-time token
+        // instead of showing the normal sign-in flow.
+        var token = "";
+        try { token = new URLSearchParams(window.location.search).get("gigio_login") || ""; } catch (e) {}
+        if (token) {
+            consumeLoginLink(token);
+            return;
+        }
+
         refreshSession();
     }
 
@@ -155,12 +164,39 @@
         });
     }
 
+    // ---------- one-time sign-in link ("forgot password") ----------
+
+    /**
+     * Exchange a one-time token (from a "forgot password" email link) for a
+     * session. The token is stripped from the URL first so a refresh or bookmark
+     * won't try to reuse an already-spent link.
+     */
+    function consumeLoginLink(token) {
+        body().textContent = "Signing you in…";
+        try {
+            var url = new URL(window.location.href);
+            url.searchParams.delete("gigio_login");
+            window.history.replaceState({}, document.title, url.toString());
+        } catch (e) {}
+
+        api("/organizer/magic-login", "POST", { token: token })
+            .then(function (p) {
+                applyPayload(p);
+                setStatus("You’re signed in.", "success");
+                renderSignedIn();
+            })
+            .catch(function (err) {
+                renderAuth("login");
+                setStatus(err.message, "error");
+            });
+    }
+
     // ---------- auth (sign in / sign up) ----------
 
     function renderAuth(mode) {
         var isLogin = mode !== "register";
         body().innerHTML =
-            '<h2>' + (isLogin ? "Sign in to submit an event" : "Create an organizer account") + '</h2>' +
+            '<h2>' + (isLogin ? "Sign in to send us a gig" : "Register to send us a gig") + '</h2>' +
             '<form class="gigio-auth-form">' +
             (isLogin ? "" :
                 '<label class="gigio-field"><span>Your name</span>' +
@@ -172,14 +208,22 @@
             (isLogin ? "current-password" : "new-password") + '" minlength="8" /></label>' +
             '<button type="submit">' + (isLogin ? "Sign in" : "Create account") + '</button>' +
             '</form>' +
-            '<p>' + (isLogin ? "New here? " : "Already have an account? ") +
+            '<p>' + (isLogin ? "New here? " : "Signed in here before? ") +
             '<button type="button" class="gigio-secondary gigio-toggle-auth">' +
-            (isLogin ? "Create an account" : "Sign in") + '</button></p>';
+            (isLogin ? "Create a password" : "Sign in") + '</button></p>' +
+            (isLogin ? '<p><button type="button" class="gigio-secondary gigio-forgot">' +
+                'Forgot your password?</button></p>' : "");
 
         el(".gigio-toggle-auth").addEventListener("click", function () {
             setStatus("");
             renderAuth(isLogin ? "register" : "login");
         });
+
+        if (isLogin) {
+            el(".gigio-forgot").addEventListener("click", function () {
+                renderForgot(el(".gigio-auth-form").email.value.trim());
+            });
+        }
 
         el(".gigio-auth-form").addEventListener("submit", function (e) {
             e.preventDefault();
@@ -197,6 +241,52 @@
                     renderSignedIn();
                 })
                 .catch(function (err) { setStatus(err.message, "error"); });
+        });
+    }
+
+    /**
+     * "Forgot password" view: ask for an email and request a one-time sign-in
+     * link. The response is deliberately neutral about whether the address is on
+     * file, matching the server (which always returns success).
+     */
+    function renderForgot(prefill) {
+        setStatus("");
+        body().innerHTML =
+            '<h2>Email me a sign-in link</h2>' +
+            '<p>Enter your email and we’ll send a link that signs you in without a ' +
+            'password. It works once and expires after two hours.</p>' +
+            '<form class="gigio-forgot-form">' +
+            '<label class="gigio-field"><span>Email</span>' +
+            '<input type="email" name="email" required autocomplete="email" value="' +
+            esc(prefill || "") + '" /></label>' +
+            '<div class="gigio-form-actions">' +
+            '<button type="submit">Send link</button>' +
+            '<button type="button" class="gigio-secondary gigio-back-login">Back to sign in</button>' +
+            '</div>' +
+            '</form>';
+
+        el(".gigio-back-login").addEventListener("click", function () {
+            setStatus("");
+            renderAuth("login");
+        });
+
+        el(".gigio-forgot-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            var email = e.target.email.value.trim();
+            var btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            setStatus("Sending…");
+            api("/organizer/forgot", "POST", {
+                email: email,
+                page: window.location.origin + window.location.pathname
+            }).then(function () {
+                renderAuth("login");
+                setStatus("If that email has an account, we’ve sent a sign-in link. " +
+                    "Check your inbox (and spam folder).", "success");
+            }).catch(function (err) {
+                setStatus(err.message, "error");
+                btn.disabled = false;
+            });
         });
     }
 
@@ -232,7 +322,18 @@
             '</div>' +
             '</form>' +
             '<h2>Your events</h2>' +
-            '<ul class="gigio-my-events"></ul>';
+            '<ul class="gigio-my-events"></ul>' +
+            '<div class="gigio-account">' +
+            '<button type="button" class="gigio-secondary gigio-change-pw">Change my password</button>' +
+            '<form class="gigio-change-pw-form" style="display:none">' +
+            '<label class="gigio-field"><span>New password</span>' +
+            '<input type="password" name="password" required autocomplete="new-password" minlength="8" /></label>' +
+            '<label class="gigio-field"><span>Confirm new password</span>' +
+            '<input type="password" name="confirm" required autocomplete="new-password" minlength="8" /></label>' +
+            '<div class="gigio-form-actions">' +
+            '<button type="submit">Save password</button>' +
+            '<button type="button" class="gigio-secondary gigio-cancel-pw">Cancel</button>' +
+            '</div></form></div>';
 
         el(".gigio-logout").addEventListener("click", function () {
             api("/organizer/logout", "POST").then(function () {
@@ -241,6 +342,8 @@
                 renderAuth("login");
             });
         });
+
+        wireChangePassword();
 
         var form = el(".gigio-event-form");
         el(".gigio-cancel-edit").addEventListener("click", function () { resetForm(); });
@@ -254,6 +357,52 @@
         form.addEventListener("submit", onSubmitEvent);
 
         renderMyEvents();
+    }
+
+    // "Change my password": reveal an inline new-password form under the events
+    // list. No current password is required — the organizer is already signed in
+    // (possibly via a one-time link). The session stays valid after the change.
+    function wireChangePassword() {
+        var toggle = el(".gigio-change-pw");
+        var pwForm = el(".gigio-change-pw-form");
+        if (!toggle || !pwForm) return;
+
+        toggle.addEventListener("click", function () {
+            toggle.style.display = "none";
+            pwForm.style.display = "";
+            pwForm.password.focus();
+        });
+
+        function close() {
+            pwForm.reset();
+            pwForm.style.display = "none";
+            toggle.style.display = "";
+        }
+        el(".gigio-cancel-pw").addEventListener("click", function () {
+            setStatus("");
+            close();
+        });
+
+        pwForm.addEventListener("submit", function (e) {
+            e.preventDefault();
+            if (pwForm.password.value !== pwForm.confirm.value) {
+                setStatus("The two passwords don’t match.", "error");
+                pwForm.confirm.focus();
+                return;
+            }
+            var btn = pwForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            setStatus("Saving password…");
+            api("/organizer/password", "POST", { password: pwForm.password.value })
+                .then(function () {
+                    close();
+                    setStatus("Your password has been changed.", "success");
+                })
+                .catch(function (err) {
+                    setStatus(err.message, "error");
+                    btn.disabled = false;
+                });
+        });
     }
 
     // Autocomplete text input backed by a datalist of known venues: the organizer
