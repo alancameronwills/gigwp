@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.4
+ * @version 2.9.5
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.4
+ * Version: 2.9.5
  */
 
 /*
@@ -222,6 +222,15 @@ function gigio_gig_list($p)
     }, $postDated);
     $gigs = gigio_get_gigs($p['fromDate'], $p['category'], $postIds);
     if ($p['json']) {
+        // "::" and "|" are both language separators in text fields (e.g.
+        // "English::Welsh" / "English|Welsh"); downstream readers split on "|" to
+        // pick the reader's preferred language. Organizers may type "::" since it's
+        // easier than "|" on some mobile keyboards, so normalize it to "|" here.
+        array_walk_recursive($gigs, function (&$value) {
+            if (is_string($value)) {
+                $value = str_replace('::', '|', $value);
+            }
+        });
         return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
     }
 
