@@ -299,9 +299,9 @@
             '<span class="gigio-who">Signed in as ' + esc(who) + '</span>' +
             '<button type="button" class="gigio-secondary gigio-logout">Sign out</button>' +
             '</div>' +
-            '<h2 class="gigio-form-heading">Submit an event</h2>' +
+            '<h2 class="gigio-form-heading">Send a gig to Gigiau</h2>' +
             '<form class="gigio-event-form">' +
-            '<label class="gigio-field"><span>Event title</span>' +
+            '<label class="gigio-field"><span>Gig title</span>' +
             '<input type="text" name="title" required /></label>' +
             '<label class="gigio-field"><span>Date &amp; time</span>' +
             '<input type="datetime-local" name="dtstart" required /></label>' +
@@ -317,7 +317,7 @@
             '<label class="gigio-field"><span class="gigio-poster-label">Poster image</span>' +
             '<input type="file" name="picture" accept="image/*" required /></label>' +
             '<div class="gigio-form-actions">' +
-            '<button type="submit" class="gigio-submit-btn">Submit for approval</button>' +
+            '<button type="submit" class="gigio-submit-btn">Send it</button>' +
             '<button type="button" class="gigio-secondary gigio-cancel-edit" style="display:none">Cancel edit</button>' +
             '</div>' +
             '</form>' +
@@ -354,9 +354,15 @@
         form.dtstart.addEventListener("input", updateDateHints);
         form.dtend.addEventListener("input", updateDateHints);
 
+        // Keep the Submit button's greyed state in step with the form contents.
+        // "input" covers text/date fields; "change" catches the file picker.
+        form.addEventListener("input", updateSubmitButtonState);
+        form.addEventListener("change", updateSubmitButtonState);
+
         form.addEventListener("submit", onSubmitEvent);
 
         renderMyEvents();
+        updateSubmitButtonState();
     }
 
     // "Change my password": reveal an inline new-password form under the events
@@ -418,6 +424,33 @@
             '<datalist id="gigio-venue-list">' + options + '</datalist>';
     }
 
+    // Minimum length required for a venue name.
+    var VENUE_MIN = 3;
+
+    /**
+     * Is the event form complete enough to submit? Mirrors the hard checks in
+     * onSubmitEvent so the Submit button's greyed state matches what a click
+     * would accept: title, a valid date, a venue of at least VENUE_MIN
+     * characters, and (for a new event) a poster file.
+     */
+    function isEventFormValid(form) {
+        if (!form) return false;
+        if (!form.title.value.trim()) return false;
+        if (form.venue.value.trim().length < VENUE_MIN) return false;
+        if (validateDates(form.dtstart.value, form.dtend.value)) return false;
+        var picture = form.querySelector('input[name="picture"]');
+        if (picture && picture.required && !(picture.files && picture.files[0])) return false;
+        return true;
+    }
+
+    // Grey the Submit button (leaving it clickable) whenever the form isn't valid.
+    function updateSubmitButtonState() {
+        var form = el(".gigio-event-form");
+        if (!form) return;
+        var btn = form.querySelector(".gigio-submit-btn");
+        if (btn) btn.classList.toggle("gigio-btn-disabled", !isEventFormValid(form));
+    }
+
     function onSubmitEvent(e) {
         e.preventDefault();
         var form = e.target;
@@ -426,6 +459,12 @@
         if (dateError) {
             setStatus(dateError, "error");
             form.dtstart.focus();
+            return;
+        }
+
+        if (form.venue.value.trim().length < VENUE_MIN) {
+            setStatus("Please enter a venue name (at least " + VENUE_MIN + " characters).", "error");
+            form.venue.focus();
             return;
         }
 
@@ -471,12 +510,13 @@
         if (!form) return;
         form.reset();
         form.dtstart.classList.remove("gigio-old-date");
-        el(".gigio-form-heading").textContent = "Submit an event";
-        form.querySelector(".gigio-submit-btn").textContent = "Submit for approval";
+        el(".gigio-form-heading").textContent = "Send your gig to Gigiau";
+        form.querySelector(".gigio-submit-btn").textContent = "Send it";
         form.querySelector(".gigio-submit-btn").disabled = false;
         el(".gigio-cancel-edit").style.display = "none";
         form.querySelector('input[name="picture"]').required = true;
         el(".gigio-poster-label").textContent = "Poster image";
+        updateSubmitButtonState();
     }
 
     function renderMyEvents() {
@@ -488,10 +528,10 @@
         }
         ul.innerHTML = state.events.map(function (ev) {
             var badge = ev.rejected
-                ? '<span class="gigio-status-badge rejected">Rejected</span>'
+                ? '<span class="gigio-status-badge rejected">thanks, but not this time</span>'
                 : ev.approved
-                    ? '<span class="gigio-status-badge approved">Approved</span>'
-                    : '<span class="gigio-status-badge pending">Awaiting approval</span>';
+                    ? '<span class="gigio-status-badge approved">Great, thanks! 👍</span>'
+                    : '<span class="gigio-status-badge pending">in our inbox ...</span>';
             var meta = [friendly(ev.dtstart), ev.venue].filter(Boolean).map(esc).join(" · ");
             return '<li class="gigio-my-event" data-id="' + ev.id + '">' +
                 (ev.picture ? '<img src="' + esc(ev.picture) + '" alt="" />' : '<img alt="" />') +
@@ -559,6 +599,7 @@
         el(".gigio-cancel-edit").style.display = "";
 
         updateDateHints();
+        updateSubmitButtonState();
         setStatus("Editing “" + (ev.title || "") + "”. Saving will send it back for approval.");
         form.scrollIntoView({ behavior: "smooth", block: "start" });
     }

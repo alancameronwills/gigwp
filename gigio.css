@@ -706,6 +706,17 @@ pre {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
+/* Submit button greyed while the event form isn't valid yet (still clickable,
+   so a click can explain what's missing). */
+.gigio-submit button.gigio-submit-btn.gigio-btn-disabled {
+    background-color: #b0b0b0;
+    cursor: not-allowed;
+}
+
+.gigio-submit button.gigio-submit-btn.gigio-btn-disabled:hover {
+    box-shadow: none;
+}
+
 .gigio-submit button.gigio-secondary {
     background-color: transparent;
     color: dodgerblue;
