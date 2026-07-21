@@ -307,8 +307,8 @@
             '<input type="datetime-local" name="dtstart" required /></label>' +
             '<label class="gigio-field"><span>End date (only if it runs over several days)</span>' +
             '<input type="date" name="dtend" /></label>' +
-            '<label class="gigio-field"><span>Extra info (optional, max 80 characters)</span>' +
-            '<input type="text" name="dtinfo" maxlength="80" placeholder="e.g. finish 10pm. £5 on the door :: i 10yh £5 ar y drws" /></label>' +
+            '<label class="gigio-field"><span>Extra info (optional, max 132 characters)</span>' +
+            '<input type="text" name="dtinfo" maxlength="132" placeholder="e.g. finish 10pm. £5 on the door :: i 10yh £5 ar y drws" /></label>' +
             '<label class="gigio-field"><span>Venue</span>' +
             buildVenueInput("") +
             '</label>' +
