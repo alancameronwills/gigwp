@@ -57,6 +57,12 @@
         s.className = "gigio-submit-status" + (msg ? " " + (type || "") : "");
     }
 
+    // Show a busy/activity cursor over the whole page while a write is in flight.
+    function setBusy(on) {
+        root.classList.toggle("gigio-busy", !!on);
+        document.body.style.cursor = on ? "progress" : "";
+    }
+
     /**
      * Call a REST endpoint. `data` may be a plain object (sent as JSON) or a
      * FormData (sent as multipart, e.g. with a poster file). Write requests
@@ -313,7 +319,9 @@
             buildVenueInput("") +
             '</label>' +
             '<label class="gigio-field"><span>More info / booking link (optional)</span>' +
-            '<input type="url" name="bookinglink" placeholder="https://…" /></label>' +
+            '<input type="text" inputmode="url" name="bookinglink" ' +
+            'pattern="\\s*(https?://.+|mailto:.+)\\s*" ' +
+            'placeholder="https://… or mailto:…" /></label>' +
             '<label class="gigio-field"><span class="gigio-poster-label">Poster image</span>' +
             '<input type="file" name="picture" accept="image/*" required /></label>' +
             '<div class="gigio-form-actions">' +
@@ -483,6 +491,7 @@
         var path = editing ? "/organizer/events/" + editing : "/organizer/events";
         var btn = form.querySelector(".gigio-submit-btn");
         btn.disabled = true;
+        setBusy(true);
         setStatus(editing ? "Saving changes…" : "Submitting…");
 
         api(path, "POST", fd).then(function () {
@@ -490,10 +499,12 @@
                 ? "Saved. Your edited event will be reviewed again before it shows publicly."
                 : "Thanks! Your event has been submitted and will appear once an admin approves it.",
                 "success");
+            setBusy(false);
             resetForm();
             return refreshAfterWrite();
         }).catch(function (err) {
             setStatus(err.message, "error");
+            setBusy(false);
             btn.disabled = false;
         });
     }

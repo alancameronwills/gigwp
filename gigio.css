@@ -717,6 +717,18 @@ pre {
     box-shadow: none;
 }
 
+/* Submit in flight: grey the button and show an activity cursor. */
+.gigio-submit button.gigio-submit-btn:disabled {
+    background-color: #b0b0b0;
+    cursor: progress;
+    box-shadow: none;
+}
+
+.gigio-submit.gigio-busy,
+.gigio-busy .gigio-submit button {
+    cursor: progress;
+}
+
 .gigio-submit button.gigio-secondary {
     background-color: transparent;
     color: dodgerblue;

@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.8
+ * @version 2.9.9
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.8
+ * Version: 2.9.9
  */
 
 /*
@@ -555,7 +555,7 @@ function gigio_gig_template($isSignedIn, $layout = "venue image title dates", $d
                     </div>
                     <div>
                         <label class="gig-bookinglink-group">Button link:
-                            <input class="gig-bookinglink gig-field" type="url" placeholder="https://..." value="%bookinglink" />
+                            <input class="gig-bookinglink gig-field" type="text" inputmode="url" pattern="\s*(https?://.+|mailto:.+)\s*" placeholder="https://... or mailto:..." value="%bookinglink" />
                         </label>
                     </div>
                     <div>
