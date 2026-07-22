@@ -55,7 +55,7 @@ Create whatever header and footer material you want to appear around the listing
 **Recurrence** - check the nth week of the month boxes to make the event automatically reappear after each occurrence, until the end date if there is one. For example, for a series of 6 weekly classes, check all 5 week boxes, and set the start and end dates of the course. For a club that meets every 2nd and 4th week of the month, check those boxes and set the end date = the start date.
 Alternatively, set the **Every 14 days** option.
 
-**Booking** or **More info** link - once the other page is set up - for example a Facebook page - enter the URL (https://...)
+**Booking** or **More info** link - once the other page is set up - for example a Facebook page - enter the URL (`https://...`). You can also use a `mailto:you@example.com` link so people can email you.
 Set the Booking Label to be "Book Tickets" or "Read more".
 
 **Link to Poster Page on this site** - check this if you want users to be able to click through to the gig's own page on your site. You'd use this if you want to show more pictures, or a lot more text. You'd also use it if you want to put a booking or enquiry form on your own site, rather than using an external tickets service.
@@ -152,7 +152,7 @@ Fields:
 | `dtend`   | no       | `YYYY-MM-DD` expiry date. Defaults to the start date.          |
 | `venue`   | no       | Venue name                                                     |
 | `dtinfo`  | no       | Extra date/time info shown on the poster (e.g. time, price)    |
-| `bookinglink` | no   | URL for booking/tickets or more info (`https://...`)          |
+| `bookinglink` | no   | URL for booking/tickets or more info (`https://...` or `mailto:...`) |
 | `picture` | no       | The poster image, uploaded as a file. Set as the featured image. |
 
 Example with `curl`:
