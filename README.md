@@ -173,41 +173,6 @@ Returns `201` with the created event, including its `picture` URL and `link`.
 The linked description page (extra text and pictures) is not set by the API —
 add that through the WordPress post editor if needed.
 
-### Review queue
-
-Use the editor-only shortcode below on a private WordPress page to review events
-collected by an external agent. It shows poster images, details, source links,
-selection checkboxes, and one button for uploading the selected events.
-
-```
-[gigiau_review]
-```
-
-The collector sends the complete current queue to the authenticated endpoint:
-
-```
-POST /wp-json/gigiau/v1/review-queue
-Content-Type: application/json
-
-{ "items": [{
-  "id": "facebook-event-123",
-  "title": "The Big Show",
-  "dtstart": "2026-08-01 19:30",
-  "dtend": "2026-08-01",
-  "venue": "Main Hall",
-  "dtinfo": "Doors 7pm, £15",
-  "bookinglink": "https://tickets.example/big-show",
-  "source_url": "https://www.facebook.com/events/123/",
-  "image_url": "https://.../poster.jpg",
-  "source_posted_at": "2026-07-15T10:30:00+01:00",
-  "notes": "Found in a Facebook post"
-}] }
-```
-
-This endpoint and the upload action require a WordPress editor login (an
-Application Password is suitable for the collector). Upload rechecks an exact
-title-and-date match against current listings before creating each event.
-
 ## Event pages
 
 Each event is recorded as a post in the WordPress database, with category `gig`. You can see them in the lists of posts in the Admin pages.

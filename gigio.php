@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.11
+ * @version 2.9.12
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.11
+ * Version: 2.9.12
  */
 
 /*
@@ -776,30 +776,6 @@ add_action('rest_api_init', function () {
             ],
         ],
     ]);
-
-    // The review queue is deliberately separate from published events. A
-    // collector may add candidates here, but they cannot appear on the public
-    // listings until an editor explicitly selects and uploads them.
-    $reviewPermission = function () {
-        return current_user_can('edit_others_posts');
-    };
-    register_rest_route('gigiau/v1', '/review-queue', [
-        [
-            'methods' => 'GET',
-            'callback' => 'gigio_rest_review_queue_get',
-            'permission_callback' => $reviewPermission,
-        ],
-        [
-            'methods' => 'POST',
-            'callback' => 'gigio_rest_review_queue_put',
-            'permission_callback' => $reviewPermission,
-        ],
-    ]);
-    register_rest_route('gigiau/v1', '/review-queue/upload', [
-        'methods' => 'POST',
-        'callback' => 'gigio_rest_review_queue_upload',
-        'permission_callback' => $reviewPermission,
-    ]);
 });
 
 /**
@@ -911,151 +887,6 @@ function gigio_rest_add_event($request)
         return $post_id;
     }
     return gigio_event_response($post_id, 201);
-}
-
-// ************ Curated-review queue ************
-
-define('GIGIO_REVIEW_QUEUE_OPTION', 'gigio_review_queue');
-
-function gigio_review_queue()
-{
-    $queue = get_option(GIGIO_REVIEW_QUEUE_OPTION, []);
-    return is_array($queue) ? array_values($queue) : [];
-}
-
-function gigio_review_clean_item($item)
-{
-    if (!is_array($item)) {
-        return null;
-    }
-    $title = sanitize_text_field($item['title'] ?? '');
-    if ($title === '') {
-        return null;
-    }
-    $start = sanitize_text_field($item['dtstart'] ?? '');
-    $end = sanitize_text_field($item['dtend'] ?? '');
-    if ($start !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2})?$/', $start)) {
-        return null;
-    }
-    if ($end !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)) {
-        return null;
-    }
-    return [
-        'id' => sanitize_key($item['id'] ?? wp_generate_uuid4()),
-        'title' => $title,
-        'dtstart' => $start,
-        'dtend' => $end ?: substr($start, 0, 10),
-        'venue' => sanitize_text_field($item['venue'] ?? ''),
-        'dtinfo' => sanitize_text_field($item['dtinfo'] ?? ''),
-        'bookinglink' => esc_url_raw($item['bookinglink'] ?? ''),
-        'source_url' => esc_url_raw($item['source_url'] ?? ''),
-        'image_url' => esc_url_raw($item['image_url'] ?? ''),
-        'source_posted_at' => sanitize_text_field($item['source_posted_at'] ?? ''),
-        'notes' => sanitize_textarea_field($item['notes'] ?? ''),
-    ];
-}
-
-function gigio_rest_review_queue_get($request)
-{
-    return rest_ensure_response(['items' => gigio_review_queue()]);
-}
-
-/** Replace the review queue. This endpoint is intended for the scheduled
- * collector, using an editor's WordPress Application Password. */
-function gigio_rest_review_queue_put($request)
-{
-    $items = $request->get_param('items');
-    if (!is_array($items)) {
-        return new WP_Error('gigio_bad_review_queue', 'items must be an array.', ['status' => 400]);
-    }
-    $clean = [];
-    foreach ($items as $item) {
-        $item = gigio_review_clean_item($item);
-        if ($item) {
-            $clean[] = $item;
-        }
-    }
-    update_option(GIGIO_REVIEW_QUEUE_OPTION, $clean, false);
-    return rest_ensure_response(['items' => $clean]);
-}
-
-function gigio_review_is_duplicate($item)
-{
-    $title = strtolower(trim(preg_replace('/\s+/', ' ', html_entity_decode($item['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8'))));
-    $date = substr((string) $item['dtstart'], 0, 10);
-    foreach (gigio_rest_list_events(null)->get_data() as $event) {
-        $existingTitle = strtolower(trim(preg_replace('/\s+/', ' ', $event['title'])));
-        if ($date !== '' && $date === substr($event['start'], 0, 10) && $title === $existingTitle) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function gigio_attach_remote_poster($post_id, $url)
-{
-    if (!$url) {
-        return new WP_Error('gigio_missing_poster', 'This review item has no poster image.', ['status' => 400]);
-    }
-    $parts = wp_parse_url($url);
-    if (($parts['scheme'] ?? '') !== 'https' || empty($parts['host'])) {
-        return new WP_Error('gigio_bad_poster_url', 'The poster image must use an HTTPS URL.', ['status' => 400]);
-    }
-    require_once ABSPATH . 'wp-admin/includes/file.php';
-    require_once ABSPATH . 'wp-admin/includes/image.php';
-    require_once ABSPATH . 'wp-admin/includes/media.php';
-    $tmp = download_url($url, 20);
-    if (is_wp_error($tmp)) {
-        return new WP_Error('gigio_poster_download_failed', 'Could not download the poster image.', ['status' => 400]);
-    }
-    $path = parse_url($url, PHP_URL_PATH) ?: 'poster.jpg';
-    $name = sanitize_file_name(basename($path)) ?: 'poster.jpg';
-    $attachment = media_handle_sideload(['name' => $name, 'tmp_name' => $tmp], $post_id);
-    if (is_wp_error($attachment)) {
-        @unlink($tmp);
-        return new WP_Error('gigio_poster_upload_failed', 'Could not add the poster image.', ['status' => 400]);
-    }
-    set_post_thumbnail($post_id, $attachment);
-    return $attachment;
-}
-
-function gigio_rest_review_queue_upload($request)
-{
-    $ids = $request->get_param('ids');
-    if (!is_array($ids) || count($ids) === 0) {
-        return new WP_Error('gigio_no_review_selection', 'Select at least one event.', ['status' => 400]);
-    }
-    $wanted = array_flip(array_map('sanitize_key', $ids));
-    $remaining = [];
-    $created = [];
-    $failed = [];
-    foreach (gigio_review_queue() as $item) {
-        if (!isset($wanted[$item['id']])) {
-            $remaining[] = $item;
-            continue;
-        }
-        if (gigio_review_is_duplicate($item)) {
-            $failed[] = ['id' => $item['id'], 'title' => $item['title'], 'error' => 'A matching published event already exists.'];
-            $remaining[] = $item;
-            continue;
-        }
-        $post_id = gigio_create_event($item, []);
-        if (is_wp_error($post_id)) {
-            $failed[] = ['id' => $item['id'], 'title' => $item['title'], 'error' => $post_id->get_error_message()];
-            $remaining[] = $item;
-            continue;
-        }
-        $poster = gigio_attach_remote_poster($post_id, $item['image_url']);
-        if (is_wp_error($poster)) {
-            wp_delete_post($post_id, true);
-            $failed[] = ['id' => $item['id'], 'title' => $item['title'], 'error' => $poster->get_error_message()];
-            $remaining[] = $item;
-            continue;
-        }
-        $created[] = gigio_event_response($post_id, 201)->get_data();
-    }
-    update_option(GIGIO_REVIEW_QUEUE_OPTION, $remaining, false);
-    return rest_ensure_response(['created' => $created, 'failed' => $failed, 'items' => $remaining]);
 }
 
 /**
@@ -1962,35 +1793,6 @@ function gigio_send_submission_notification_email()
 // known names) and a list of their own events with approval status and Edit.
 
 add_shortcode('gigiau_submit', 'gigio_submit_shortcode');
-
-/**
- * Editor-only review board for events collected from Facebook and other sources.
- * Add [gigiau_review] to a private WordPress page.
- */
-add_shortcode('gigiau_review', 'gigio_review_shortcode');
-function gigio_review_shortcode($attributes = [])
-{
-    if (!current_user_can('edit_others_posts')) {
-        return '<p>You need to sign in as an event editor to review collected events.</p>';
-    }
-    $jsFile = plugin_dir_path(__FILE__) . 'gigio-review.js';
-    $cssFile = plugin_dir_path(__FILE__) . 'gigio-review.css';
-    wp_enqueue_script('gigio-review', plugin_dir_url(__FILE__) . 'gigio-review.js', [], file_exists($jsFile) ? filemtime($jsFile) : null, true);
-    wp_enqueue_style('gigio-review', plugin_dir_url(__FILE__) . 'gigio-review.css', [], file_exists($cssFile) ? filemtime($cssFile) : null);
-    $config = [
-        'restBase' => esc_url_raw(rest_url('gigiau/v1')),
-        'nonce' => wp_create_nonce('wp_rest'),
-    ];
-    return '<div class="gigio-review" data-config="' . esc_attr(wp_json_encode($config)) . '">'
-        . '<div class="gigio-review-status" role="status" aria-live="polite">Loading review queue…</div>'
-        . '<div class="gigio-review-toolbar"><label><input type="checkbox" class="gigio-review-all"> Select all</label>'
-        . '<button type="button" class="gigio-review-upload" disabled>Upload selected events</button></div>'
-        . '<details class="gigio-review-import"><summary>Import a fresh scan</summary>'
-        . '<p>For the collector connection only. Paste the scan JSON and save it as the new review queue.</p>'
-        . '<textarea class="gigio-review-import-data" rows="8" spellcheck="false" aria-label="Scan JSON"></textarea>'
-        . '<button type="button" class="gigio-review-import-save">Save review queue</button></details>'
-        . '<div class="gigio-review-list"></div></div>';
-}
 
 function gigio_submit_shortcode($attributes = [])
 {
