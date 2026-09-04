@@ -14,4 +14,8 @@
 .gigio-review-status:empty { display: none; }
 .gigio-review-status { padding: .75rem 0; font-weight: 600; }
 .gigio-review-empty { color: #5f6368; }
+.gigio-review-import { margin: 1rem 0; padding: .75rem 1rem; background: #f6f8fb; border: 1px solid #d9dee8; border-radius: .5rem; }
+.gigio-review-import summary { cursor: pointer; font-weight: 600; }
+.gigio-review-import textarea { display: block; width: 100%; box-sizing: border-box; margin: .75rem 0; font-family: ui-monospace, monospace; }
+.gigio-review-import-save { padding: .55rem .85rem; }
 @media (max-width: 600px) { .gigio-review-card { grid-template-columns: 1fr; } .gigio-review-image { max-width: 300px; } .gigio-review-toolbar { align-items: flex-start; flex-direction: column; } }

@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.10
+ * @version 2.9.11
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.10
+ * Version: 2.9.11
  */
 
 /*
@@ -1985,6 +1985,10 @@ function gigio_review_shortcode($attributes = [])
         . '<div class="gigio-review-status" role="status" aria-live="polite">Loading review queue…</div>'
         . '<div class="gigio-review-toolbar"><label><input type="checkbox" class="gigio-review-all"> Select all</label>'
         . '<button type="button" class="gigio-review-upload" disabled>Upload selected events</button></div>'
+        . '<details class="gigio-review-import"><summary>Import a fresh scan</summary>'
+        . '<p>For the collector connection only. Paste the scan JSON and save it as the new review queue.</p>'
+        . '<textarea class="gigio-review-import-data" rows="8" spellcheck="false" aria-label="Scan JSON"></textarea>'
+        . '<button type="button" class="gigio-review-import-save">Save review queue</button></details>'
         . '<div class="gigio-review-list"></div></div>';
 }
 

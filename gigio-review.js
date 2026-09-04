@@ -6,6 +6,8 @@
   const list = root.querySelector('.gigio-review-list');
   const selectAll = root.querySelector('.gigio-review-all');
   const upload = root.querySelector('.gigio-review-upload');
+  const importData = root.querySelector('.gigio-review-import-data');
+  const importSave = root.querySelector('.gigio-review-import-save');
   let items = [];
 
   const request = async (path, options = {}) => {
@@ -101,6 +103,33 @@
     } catch (error) {
       status.textContent = `Nothing was uploaded: ${error.message}`;
       updateControls();
+    }
+  });
+
+  importSave?.addEventListener('click', async () => {
+    let payload;
+    try {
+      payload = JSON.parse(importData.value);
+      if (Array.isArray(payload)) payload = { items: payload };
+      if (!Array.isArray(payload.items)) throw new Error('Expected an items array.');
+    } catch (error) {
+      status.textContent = `The scan data is not valid JSON: ${error.message}`;
+      return;
+    }
+    importSave.disabled = true;
+    status.textContent = 'Saving the review queue…';
+    try {
+      const result = await request('/review-queue', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      items = result.items || [];
+      status.textContent = `${items.length} event${items.length === 1 ? '' : 's'} awaiting review.`;
+      importData.value = '';
+      render();
+    } catch (error) {
+      status.textContent = `Could not save the review queue: ${error.message}`;
+    } finally {
+      importSave.disabled = false;
     }
   });
 
