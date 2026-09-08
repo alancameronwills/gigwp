@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.12
+ * @version 2.9.13
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.12
+ * Version: 2.9.13
  */
 
 /*
@@ -613,7 +613,7 @@ function gigio_gig_show($gigs, $p)
         $cssModTime = filemtime($cssFile);
         ?>
         <link rel="stylesheet" href="<?= plugin_dir_url(__FILE__) ?>gigio.css?ver=<?= $cssModTime ?>">
-        <div id="giglist" class="giglist <?= $alignClass ?> <?= $p['strip'] ? "strip" : "" ?>" />
+        <div id="giglist" class="giglist <?= $alignClass ?> <?= $p['strip'] ? "strip" : "" ?>">
         <style>
             #giglist {
                 --pic-width: <?= $p['width'] ?>px;
@@ -659,6 +659,7 @@ function gigio_gig_show($gigs, $p)
             <div class="sa_scrollButton sa_scrollerRight">❰&nbsp;</div>
         <?php }
         ?>
+        </div>
     </div>
 
     <script>
