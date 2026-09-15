@@ -83,6 +83,28 @@
     }
 }
 
+
+.giglist.align-center {
+    &>.gigs {
+        align-items: center;
+    }
+
+    .gigpic>img {
+        height: auto;
+    }
+}
+
+
+.giglist.align-stretch {
+    &>.gigs {
+        align-items: stretch;
+    }
+
+    .gigpic>img {
+        height: auto;
+    }
+}
+
 .giglist.align-top {
     &>.gigs {
         align-items: flex-start;

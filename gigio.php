@@ -140,7 +140,7 @@ function gigio_events_list_shortcode($attributes = [])
             'popImages' => true, // expand image on user click
             'venue' => "",
             'book' => "Book Tickets",
-            'align' => "base", //bottom | top | base | cover | columns 
+            'align' => "base", //bottom | center | top | base | stretch | cover | columns 
             'strip' => false, // true -> single horizontal sliding row; false -> rows with wraparound
             'max' => 0, // max count of items; typically use with strip
             'background' => "whitesmoke",
@@ -162,6 +162,8 @@ function gigio_events_list_shortcode($attributes = [])
 
     $valid_width = ($width && $width > 30 && $width < 1000 ? $width : ($strip ? 270 : 340));
     $valid_height = ($height && $height > 30 && $height < 2000 ? $height : floor(1.42 * $valid_width));
+    $valid_align = validate_param($_GET['align'] ?? get_option("gigioalignment",  trim($align)), "/bottom|top|center|stretch|base|cover|columns/", "base");
+    if ($strip && $valid_align=="columns") $valid_align="top";
 
     $p = [
         'layout' => validate_param($layout, "/[a-z ]{3,40}/", "shortdate image title dates venue"),
@@ -174,7 +176,7 @@ function gigio_events_list_shortcode($attributes = [])
         'book' => $book,
         'strip' => $strip,
         'max' => ($max && $max > 0 ? $max : ($strip ? 10 : 0)),
-        'align' => validate_param($_GET['align'] ?? get_option("gigioalignment",  $align), "/[-a-z]{1,20}/", "base"),
+        'align' => $valid_align,
         'background' => validate_param($background, "/^#[0-9a-fA-F]{6,8}$|^[-a-z]+$|^[a-z]+?\([0-9,]+\)$/", "whitesmoke"),
         'headercolor' => validate_param($headercolor, "/^#?[a-zA-Z0-9]{3,24}$/", "#303030"),
         'popImages' => $popImages,
@@ -653,7 +655,7 @@ function gigio_gig_show($gigs, $p)
         ?>
         <div class='gigs'>
         </div>
-        <?php if (false && $p['strip']) { // No scroll controls now
+        <?php if ($p['strip']) {
         ?>
             <div class="sa_scrollButton sa_scrollerLeft">&nbsp;❱</div>
             <div class="sa_scrollButton sa_scrollerRight">❰&nbsp;</div>

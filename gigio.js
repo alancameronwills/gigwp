@@ -47,9 +47,9 @@ function scrollStripHandler() {
  * On loading the page, show the content
  * @param {json} gigListJson 
  */
-function fillGigList(gigListJson, strip = false) {
+function fillGigList(gigListJson, template, strip = false) {
     const gigList = JSON.parse(gigListJson);
-    let gigListHtml = gigList.map(gig => gigHtml(gig)).join("\n");
+    let gigListHtml = gigList.map(gig => gigHtml(gig, template)).join("\n");
     gigio(".giglist>.gigs").innerHTML = gigListHtml;
     if (window?.setHandlers) setHandlers(gigioa(".gig"));
     if (gigio(".giglist").classList.contains("align-columns")) {
@@ -195,7 +195,7 @@ function rearrangeGigsByColumns(event) {
  * @param {Gig} post 
  * @returns HTML string
  */
-function gigHtml(post) {
+function gigHtml(post, template) {
     try {
         const title = ("" + (post.title?.rendered || post.title)).replaceAll(/</g, "&lt;");
         const imgLink = post.thumbnail_image || post.pic || "/?p=" + post.featured_media;
@@ -229,7 +229,6 @@ function gigHtml(post) {
                 : post.meta.bookinglink;
             bookbutton = `<button class="bookbutton" onclick="gotolink('${link}')">${post.meta.booklabel || window.gigiauDefaultBookButtonLabel || "Book"}</button>`;
         }
-        let template = jQuery("#gigtemplate").html();
         // Strip HTML to get plain text content, preserving paragraph breaks as newlines
         let contentText = "";
         if (post.content) {
