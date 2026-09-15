@@ -26,7 +26,7 @@ $zipPath  = Join-Path $buildDir "$pluginSlug-$version.zip"
 $excludePatterns = @(
     '.git', '.gitignore', '.gitattributes',
     '.claude', '.vscode', '.idea',
-    'build', 'build-release.ps1',
+    'build', 'build-release.ps1', 'release.ps1',
     'CLAUDE.md', 'README.md',
     '*.zip'
 )

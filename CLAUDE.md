@@ -58,7 +58,7 @@ This is a WordPress plugin running in a local UniServer environment. Changes tak
 
 ## Releases
 
-The plugin auto-updates from GitHub releases (Plugin Update Checker, release assets enabled). To cut a release: bump the `Version:`/`@version` headers in `gigio.php`, commit, run `build-release.ps1` to produce the zip, tag `v<version>`, push the tag, and create a GitHub release with the zip as an asset. Tags are `v2.8` style; the release asset is `gigiau-events-posters-<version>.zip` with `gigiau-events-posters/` as the top-level folder.
+The plugin auto-updates from GitHub releases (Plugin Update Checker, release assets enabled). To cut a release: bump the `Version:`/`@version` headers in `gigio.php`, commit, and push. Then run `release.ps1` — it verifies the working tree is clean and pushed, builds the zip via `build-release.ps1`, tags `v<version>`, pushes the tag, and creates the GitHub release (via `gh`) with the zip as an asset and notes generated from the commits since the previous tag. Tags are `v2.8` style; the release asset is `gigiau-events-posters-<version>.zip` with `gigiau-events-posters/` as the top-level folder.
 
 ## Shortcode Parameters Reference
 
