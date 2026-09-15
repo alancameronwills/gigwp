@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.15
+ * @version 2.9.16
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.15
+ * Version: 2.9.16
  */
 
 /*
@@ -37,6 +37,13 @@ $gigioUpdateChecker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdate
 );
 $gigioUpdateChecker->setBranch('main');
 $gigioUpdateChecker->getVcsApi()->enableReleaseAssets();
+if (defined('GIGIO_GITHUB_TOKEN') && GIGIO_GITHUB_TOKEN) {
+    // Raises the GitHub API rate limit from 60/hr (shared per-IP) to 5000/hr;
+    // avoids "puc-github-http-error" 403s on hosts sharing a busy IP.
+    // Set define('GIGIO_GITHUB_TOKEN', '...'); in wp-config.php - a public-repo
+    // token needs no scopes.
+    $gigioUpdateChecker->setAuthentication(GIGIO_GITHUB_TOKEN);
+}
 
 // Requisites for category creation
 require_once(ABSPATH . 'wp-config.php');

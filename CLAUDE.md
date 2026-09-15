@@ -60,6 +60,8 @@ This is a WordPress plugin running in a local UniServer environment. Changes tak
 
 The plugin auto-updates from GitHub releases (Plugin Update Checker, release assets enabled). To cut a release: bump the `Version:`/`@version` headers in `gigio.php`, commit, and push. Then run `release.ps1` — it verifies the working tree is clean and pushed, builds the zip via `build-release.ps1`, tags `v<version>`, pushes the tag, and creates the GitHub release (via `gh`) with the zip as an asset and notes generated from the commits since the previous tag. Tags are `v2.8` style; the release asset is `gigiau-events-posters-<version>.zip` with `gigiau-events-posters/` as the top-level folder.
 
+If an install's "Check for Updates" shows a `puc-github-http-error` with HTTP 403, GitHub's API is rejecting the unauthenticated request — usually the 60/hour per-IP rate limit on a shared host, or GitHub's secondary rate limit. Set `define('GIGIO_GITHUB_TOKEN', '...');` in that install's `wp-config.php` (a token with no scopes is enough for a public repo) to raise the limit to 5000/hour; `gigio.php` picks it up automatically if present.
+
 ## Shortcode Parameters Reference
 
 Key parameters for `[gigiau]`:
