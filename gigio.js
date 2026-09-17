@@ -165,8 +165,8 @@ function gigioScrollToHash() {
 
 function rearrangeGigsByColumns(event) {
     if (!event) window.addEventListener("resize", rearrangeGigsByColumns);
-    const columnCount = Math.max(Math.floor(window.innerWidth / (window.gigWidth || 340)), 1);
     let gigsTop = gigio(".giglist>.gigs");
+    const columnCount = Math.max(Math.floor(gigsTop.clientWidth / (window.gigWidth || 340)), 1);
     if (gigsTop.children.length == columnCount
         && gigsTop.children[0].classList.contains("gig-column")) {
         return;
