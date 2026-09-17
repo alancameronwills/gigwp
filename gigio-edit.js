@@ -17,7 +17,7 @@ function helpGigs(event) {
  * @param (post) post 
  */
 function insertGig(post) {
-    let postDom = jQuery.parseHTML(gigHtml(post))[0];
+    let postDom = jQuery.parseHTML(gigHtml(post, jQuery("#gigtemplate").html()))[0];
     gigio(".giglist>.gigs").prepend(postDom);
     setHandlers(postDom);
     setFieldsEditable();
@@ -29,7 +29,7 @@ function insertGig(post) {
  * @param {} post 
  */
 function refreshGig(gig, post) {
-    let html = gigHtml(post);
+    let html = gigHtml(post, jQuery("#gigtemplate").html());
     let postDom = jQuery.parseHTML(html)[0];
     gig.replaceWith(postDom);
     setHandlers(postDom);
