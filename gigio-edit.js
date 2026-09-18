@@ -101,7 +101,7 @@ function newPost(title, img, dtstart = "", dtend = "", dtinfo = "") {
         }
     };
     // Parameter from shortcode:
-    const m = dtinfo.match(/^([^=£]*)=?(.*)$/);
+    const m = dtinfo.match(/^([^=£]*)=(.*)$/);
     if (m) {
         query.meta.venue = m[1];
         query.meta.dtinfo = m[2] || "";
