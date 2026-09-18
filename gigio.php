@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.9.18
+ * @version 2.10.0
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.9.18
+ * Version: 2.10.0
  */
 
 /*
@@ -201,6 +201,8 @@ function gigio_events_list_shortcode($attributes = [])
             update_option("gigioalignment", $align_valid);
         }
     }
+
+    gigio_track_login_redirect_page($p);
 
     return gigio_gig_list($p);
 }
@@ -640,23 +642,36 @@ function gigio_gig_show($gigs, $p)
                 window.gigiauVenueInFilename = "<?= !!$p['venueinfilename'] ?>";
             </script>
             <div class='controls'>
-                <label class="alignment-control">
-                    Alignment:
-                    <select onchange="setAlignment(this.value)">
-                        <option value="">(default)</option>
-                        <?php
-                        foreach (["columns", "cover", "top", "base", "bottom"] as $option) {
-                        ?>
-                            <option value='<?= $option ?>' <?= ($option == $p['align'] ? "selected" : "") ?>><?= $option ?></option>
-                        <?php
-                        }
-                        ?>
-                    </select>
-                </label>
-                <label>Show as if on: <input type="date" value="<?= $p['fromDate'] ?>" oninput="setFromDate(this.value)" /></label>
                 <button id="addButton" title="add event posters" onclick='addGig(event)'>Add</button>
                 <button id="editButton" title="edit the event details" onclick='editGig(event)'>Edit</button>
                 <button id="helpButton" title="help" onclick='helpGigs(event)'>?</button>
+                <div class="settings-menu">
+                    <button id="settingsButton" title="settings" onclick="toggleSettingsMenu(event)">&#9881;</button>
+                    <div id="settingsPopup" class="settings-popup" hidden>
+                        <label class="alignment-control">
+                            Alignment:
+                            <select onchange="setAlignment(this.value)">
+                                <option value="">(default)</option>
+                                <?php
+                                foreach (["columns", "cover", "top", "base", "bottom"] as $option) {
+                                ?>
+                                    <option value='<?= $option ?>' <?= ($option == $p['align'] ? "selected" : "") ?>><?= $option ?></option>
+                                <?php
+                                }
+                                ?>
+                            </select>
+                        </label>
+                        <label>Show as if on: <input type="date" value="<?= $p['fromDate'] ?>" oninput="setFromDate(this.value)" /></label>
+                        <?php if (!$p['strip']) { ?>
+                            <label title="When you log in, go straight to this listings page instead of the WordPress Dashboard">
+                                <input type="checkbox" id="loginRedirectCheckbox"
+                                    <?= get_user_meta(get_current_user_id(), 'gigio_skip_login_redirect', true) ? "" : "checked" ?>
+                                    onchange="setLoginRedirectPref(this.checked)" />
+                                Come to this page on login
+                            </label>
+                        <?php } ?>
+                    </div>
+                </div>
             </div>
         <?php }
         ?>
@@ -707,6 +722,67 @@ function gigio_gig_show($gigs, $p)
 }
 
 
+// ******* "Come to this page on login" **********
+//
+// Administrators and Editors can optionally be sent straight to the events
+// listings page when they log in, instead of the WordPress Dashboard. There's
+// no admin setting for which page that is: it's simply whichever published,
+// non-strip [gigiau] page was most recently displayed (gigio_track_login_redirect_page,
+// called from gigio_events_list_shortcode). The option stays unset - and the
+// feature off - until such a page is actually displayed, so a fresh install
+// never guesses.  Each admin/editor can opt out for themselves via the
+// "Come to this page on login" checkbox next to Add/Edit (gigio_skip_login_redirect
+// user meta).
+
+/**
+ * Record the most-recently-displayed non-strip [gigiau] page, so admins/editors
+ * can be sent there on login. Skipped for the JSON feed and for admin/REST
+ * requests, which aren't a "display" of the page to anyone.
+ */
+function gigio_track_login_redirect_page($p)
+{
+    if (!empty($p['strip']) || !empty($p['json'])) {
+        return;
+    }
+    if (is_admin() || (defined('REST_REQUEST') && REST_REQUEST) || wp_doing_ajax() || wp_doing_cron()) {
+        return;
+    }
+    $pageId = get_the_ID();
+    if (!$pageId) {
+        return;
+    }
+    if ((int) get_option('gigio_login_redirect_page_id', 0) !== (int) $pageId) {
+        update_option('gigio_login_redirect_page_id', (int) $pageId);
+    }
+}
+
+add_filter('login_redirect', function ($redirect_to, $requested_redirect_to, $user) {
+    if (!($user instanceof WP_User) || !user_can($user, 'edit_others_pages')) {
+        return $redirect_to;
+    }
+    // Don't hijack an explicit deep-link redirect (e.g. bounced back from a
+    // specific protected admin page). wp-login.php's form always submits
+    // redirect_to, defaulting to admin_url() when nothing specific was
+    // requested, so only treat it as "explicit" when it points somewhere else.
+    if (!empty($requested_redirect_to) && trailingslashit($requested_redirect_to) !== trailingslashit(admin_url())) {
+        return $redirect_to;
+    }
+    if (get_user_meta($user->ID, 'gigio_skip_login_redirect', true)) {
+        return $redirect_to;
+    }
+    $pageId = (int) get_option('gigio_login_redirect_page_id', 0);
+    if (!$pageId) {
+        return $redirect_to; // Feature not yet activated: no page has been displayed.
+    }
+    $page = get_post($pageId);
+    if (!$page || $page->post_status !== 'publish') {
+        return $redirect_to;
+    }
+    $url = get_permalink($page);
+    return $url ?: $redirect_to;
+}, 10, 3);
+
+
 // ************ Editor REST ***********
 
 add_action('wp_enqueue_scripts', function () {
@@ -724,6 +800,28 @@ add_action("rest_insert_post", function ($post, $request, $creating) {
         }
     }
 }, 10, 3);
+
+
+// Save the current admin/editor's "come to this page on login" preference
+// (gigio_skip_login_redirect user meta). Called from the checkbox next to
+// Add/Edit; see gigio_track_login_redirect_page / the login_redirect filter above.
+add_action('rest_api_init', function () {
+    register_rest_route('gigiau/v1', '/login-redirect-pref', [
+        'methods' => 'POST',
+        'callback' => function ($request) {
+            $userId = get_current_user_id();
+            if ($request->get_param('enabled')) {
+                delete_user_meta($userId, 'gigio_skip_login_redirect');
+            } else {
+                update_user_meta($userId, 'gigio_skip_login_redirect', '1');
+            }
+            return rest_ensure_response(['ok' => true]);
+        },
+        'permission_callback' => function () {
+            return current_user_can('edit_others_pages');
+        },
+    ]);
+});
 
 
 // ************ Public Events REST API ***********

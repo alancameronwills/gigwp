@@ -161,7 +161,7 @@
     z-index: 2000;
 }
 
-.giglist .controls>label,
+.giglist .controls label,
 .giglist button {
     padding: 6px;
     color: white;
@@ -170,10 +170,31 @@
     border: 0;
 }
 
-.giglist .controls>label *,
-.giglist .controls>label {
+.giglist .controls label *,
+.giglist .controls label {
     font-size: smaller;
     margin: 2px 2px 0 2px;
+}
+
+.giglist .settings-menu {
+    position: relative;
+    display: inline-block;
+}
+
+.giglist .settings-popup {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.giglist .settings-popup[hidden] {
+    display: none;
 }
 
 .giglist:not(.editing) .alignment-control {

@@ -621,6 +621,56 @@ function setAlignment(alignment) {
     threadFlag(1);
 }
 
+/**
+ * Admin/editor (un)checked "Come to this page on login". Saves a per-user
+ * preference; unchecking sends them to the Dashboard on login as usual.
+ * @param {boolean} enabled
+ */
+function setLoginRedirectPref(enabled) {
+    fetch(`${wpApiSettings.root}gigiau/v1/login-redirect-pref`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-WP-Nonce": wpApiSettings.nonce
+        },
+        body: JSON.stringify({ enabled: enabled })
+    }).catch(e => console.log("setLoginRedirectPref: " + e));
+}
+
+/**
+ * Gear button clicked: show/hide the settings popup (Alignment, Show as if
+ * on, Come to this page on login).
+ */
+function toggleSettingsMenu(event) {
+    event?.stopPropagation?.();
+    event?.preventDefault?.();
+    const popup = gigio("#settingsPopup");
+    if (popup.hidden) {
+        popup.hidden = false;
+        // Deferred so this same click doesn't immediately trigger the outside-click close below.
+        setTimeout(() => document.addEventListener("click", closeSettingsMenuOnOutsideClick), 0);
+    } else {
+        closeSettingsMenu();
+    }
+}
+
+function closeSettingsMenu() {
+    const popup = gigio("#settingsPopup");
+    if (popup) popup.hidden = true;
+    document.removeEventListener("click", closeSettingsMenuOnOutsideClick);
+}
+
+/**
+ * Shadow DOM retargets click events, so `event.target` seen from a
+ * document-level listener is just the capsule host - use composedPath to
+ * find out what was actually clicked inside it.
+ */
+function closeSettingsMenuOnOutsideClick(event) {
+    const path = event.composedPath();
+    if (path.includes(gigio("#settingsPopup")) || path.includes(gigio("#settingsButton"))) return;
+    closeSettingsMenu();
+}
+
 const locWithoutAlign = location.href.replace(/\?.*/, "");
 if (locWithoutAlign != location.href) {
     window.history.replaceState({}, "", locWithoutAlign);
