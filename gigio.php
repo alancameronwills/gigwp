@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.10.1
+ * @version 2.10.2
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.10.1
+ * Version: 2.10.2
  */
 
 /*
@@ -737,7 +737,12 @@ function gigio_gig_show($gigs, $p)
 /**
  * Record the most-recently-displayed non-strip [gigiau] page, so admins/editors
  * can be sent there on login. Skipped for the JSON feed and for admin/REST
- * requests, which aren't a "display" of the page to anyone.
+ * requests, which aren't a "display" of the page to anyone. Only counts a
+ * viewing by someone with the same capability the login_redirect filter below
+ * checks for - otherwise a visitor who merely isn't gated out by this page's
+ * own `notadmin` (e.g. any logged-in-but-non-editor account, or an anonymous
+ * visit to some other, unprotected [gigiau] page on the site) could hijack
+ * where admins/editors land on login.
  */
 function gigio_track_login_redirect_page($p)
 {
@@ -745,6 +750,9 @@ function gigio_track_login_redirect_page($p)
         return;
     }
     if (is_admin() || (defined('REST_REQUEST') && REST_REQUEST) || wp_doing_ajax() || wp_doing_cron()) {
+        return;
+    }
+    if (!current_user_can('edit_others_pages')) {
         return;
     }
     $pageId = get_the_ID();
