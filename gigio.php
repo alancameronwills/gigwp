@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.10.2
+ * @version 2.11.0
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.10.2
+ * Version: 2.11.0
  */
 
 /*
@@ -839,15 +839,39 @@ add_action('rest_api_init', function () {
 //
 //   GET  /wp-json/gigiau/v1/events
 //        Public. Lists title and start date-time of every event from today
-//        onwards (recurring events show their next occurrence).
+//        onwards (recurring events show their next occurrence). When the
+//        request authenticates (via WP Application Password Basic Auth) as
+//        a user who can edit others' posts, the response instead carries the
+//        full editable shape of every such event (including ones pending/
+//        rejected approval) — see gigio_admin_event_shape().
 //
 //   POST /wp-json/gigiau/v1/events
 //        Requires a signed-in user who can create posts. Adds one event from
 //        a title, start/end dates, venue, extra date info (dtinfo), a booking
 //        link (bookinglink), and an uploaded poster image (multipart/form-data
 //        field `picture`). The linked description page is not set here.
+//
+//   POST /wp-json/gigiau/v1/events/<id>
+//        Same auth as the POST above. Updates one existing event's editable
+//        fields (title/dtstart/dtend/venue/dtinfo/bookinglink) and optionally
+//        replaces its poster (multipart field `picture`). Does not touch
+//        recurrence settings or approval state.
+//
+//   DELETE /wp-json/gigiau/v1/events/<id>
+//        Same auth. Deletes one event and its poster attachment(s).
+//
+//   GET  /wp-json/gigiau/v1/events/version
+//        Same visibility rules as GET /events (public vs. authenticated), but
+//        returns only a cheap opaque fingerprint `{ version }` that changes
+//        whenever any event in that result set is added, edited, or removed —
+//        for polling to check whether a full re-fetch is worthwhile.
 
 add_action('rest_api_init', function () {
+    $adminOnly = [
+        'permission_callback' => function () {
+            return current_user_can('edit_others_posts');
+        },
+    ];
     register_rest_route('gigiau/v1', '/events', [
         [
             'methods'             => 'GET',
@@ -891,6 +915,25 @@ add_action('rest_api_init', function () {
                 ],
             ],
         ],
+    ]);
+
+    register_rest_route('gigiau/v1', '/events/version', [
+        [
+            'methods'             => 'GET',
+            'callback'            => 'gigio_rest_events_version',
+            'permission_callback' => '__return_true', // same public/admin split as GET /events itself
+        ],
+    ]);
+
+    register_rest_route('gigiau/v1', '/events/(?P<id>\d+)', [
+        array_merge($adminOnly, [
+            'methods'  => 'POST',
+            'callback' => 'gigio_rest_admin_update_event',
+        ]),
+        array_merge($adminOnly, [
+            'methods'  => 'DELETE',
+            'callback' => 'gigio_rest_admin_delete_event',
+        ]),
     ]);
 });
 
@@ -950,18 +993,25 @@ function gigio_decode_text($s)
 
 /**
  * GET /wp-json/gigiau/v1/events
- * Return the title and start date-time of every current/future event,
- * sorted by start date, with recurring events resolved to their next date.
+ * Public callers get the title and start date-time of every current/future
+ * event, sorted by start date, with recurring events resolved to their next
+ * date. A caller authenticated (via Application Password Basic Auth) as
+ * someone who can edit others' posts instead gets every field needed to
+ * edit each event (see gigio_admin_event_shape()), including ones pending
+ * or rejected approval.
  */
 function gigio_rest_list_events($request)
 {
     $fromDate = date('Y-m-d');
     $category = GIGIO_CATEGORY;
+    $isAdmin = current_user_can('edit_others_posts');
 
     // Make sure the category exists (mirrors the shortcode's first-run behaviour).
     wp_create_category($category);
 
-    $postDated = gigio_get_gigs_with_recurs($fromDate, $category);
+    // includePending: an admin editing directly should see pending/rejected
+    // (organizer-submitted) events too, same as the WP admin console does.
+    $postDated = gigio_get_gigs_with_recurs($fromDate, $category, $isAdmin);
     $postIds = array_map(function ($item) {
         return $item->ID;
     }, $postDated);
@@ -973,6 +1023,10 @@ function gigio_rest_list_events($request)
     // gigio_get_gigs applies recurrence date-shifting and sorts by start date.
     $gigs = gigio_get_gigs($fromDate, $category, $postIds);
 
+    if ($isAdmin) {
+        return rest_ensure_response(array_values(array_map('gigio_admin_event_shape', $gigs)));
+    }
+
     $events = array_map(function ($gig) {
         return [
             'id'    => $gig['id'],
@@ -982,6 +1036,141 @@ function gigio_rest_list_events($request)
     }, $gigs);
 
     return rest_ensure_response(array_values($events));
+}
+
+/**
+ * Map one gigio_get_gigs() result to the full editable shape returned by the
+ * admin branch of GET /events. Reuses $gig['meta'] as-is, including
+ * gigio_get_gigs()'s recurrence date-shifting to the next occurrence — safe
+ * here because this is a read-only view; the update endpoint never derives
+ * from it, so a recurring event's stored origin date is never overwritten by
+ * its computed next occurrence. Callers should treat 'recurring' events as
+ * date-read-only for that reason.
+ */
+function gigio_admin_event_shape($gig)
+{
+    $m = $gig['meta'] ?? [];
+    return [
+        'id'          => $gig['id'],
+        'title'       => gigio_decode_text($gig['title']),
+        'dtstart'     => $m['dtstart'] ?? '',
+        'dtend'       => $m['dtend'] ?? '',
+        'venue'       => gigio_decode_text($m['venue'] ?? ''),
+        'dtinfo'      => gigio_decode_text($m['dtinfo'] ?? ''),
+        'bookinglink' => $m['bookinglink'] ?? '',
+        'recurring'   => !empty($m['recursday']),
+        'pending'     => !empty($gig['pending']),
+        'rejected'    => !empty($gig['rejected']),
+        'picture'     => $gig['pic'] ?: null,
+        'link'        => $gig['link'],
+    ];
+}
+
+/**
+ * GET /wp-json/gigiau/v1/events/version
+ * Cheap opaque fingerprint of the same visible-event set GET /events would
+ * return for this caller (public vs. admin), for polling clients (e.g. the
+ * Chrome extension side panel, possibly open for several people at once) to
+ * check whether a full re-fetch is worth doing. Deliberately avoids any text
+ * decoding or thumbnail/permalink lookups — just id + post_modified_gmt per
+ * matching post, hashed together. Changes on any add, edit, or delete within
+ * what this caller can see (an add/delete changes which ids are in the set;
+ * an edit changes that post's own post_modified_gmt).
+ */
+function gigio_rest_events_version($request)
+{
+    $fromDate = date('Y-m-d');
+    $category = GIGIO_CATEGORY;
+    $isAdmin = current_user_can('edit_others_posts');
+
+    $postDated = gigio_get_gigs_with_recurs($fromDate, $category, $isAdmin);
+    $pairs = array_map(function ($item) {
+        return $item->ID . ':' . get_post_field('post_modified_gmt', $item->ID);
+    }, $postDated);
+    sort($pairs);
+
+    return rest_ensure_response(['version' => md5(implode(',', $pairs))]);
+}
+
+/**
+ * Guard shared by the admin update/delete endpoints: the post must exist and
+ * be in the gig category, so this API can't be used to touch arbitrary posts.
+ * Returns the post id (int) on success, or a WP_Error (404) otherwise.
+ */
+function gigio_require_gig_post($request, $category = GIGIO_CATEGORY)
+{
+    $post_id = (int) $request->get_param('id');
+    if (!$post_id || !get_post($post_id) || !has_category($category, $post_id)) {
+        return new WP_Error('gigio_not_found', 'Event not found.', ['status' => 404]);
+    }
+    return $post_id;
+}
+
+/**
+ * POST /wp-json/gigiau/v1/events/<id>
+ * Update one existing event's editable fields. Mirrors
+ * gigio_rest_organizer_update()'s field set but for an admin caller: no
+ * ownership check, and (unlike the organizer path) does not reset
+ * gigio_approved or touch recurrence meta (recursday/recursweeks/etc.) — an
+ * admin edit never turns a recurring event's pattern off, and never
+ * re-queues an already-approved event for moderation.
+ */
+function gigio_rest_admin_update_event($request)
+{
+    $post_id = gigio_require_gig_post($request);
+    if (is_wp_error($post_id)) {
+        return $post_id;
+    }
+
+    $title = trim((string) $request->get_param('title'));
+    if ($title !== '') {
+        wp_update_post(['ID' => $post_id, 'post_title' => gigio_encode_text($title)]);
+    }
+
+    list($dtstart, $dtend) = gigio_normalize_event_dates(
+        $request->get_param('dtstart'),
+        $request->get_param('dtend')
+    );
+    update_post_meta($post_id, 'dtstart', $dtstart);
+    update_post_meta($post_id, 'dtend', $dtend);
+    update_post_meta($post_id, 'venue', gigio_encode_text(trim((string) $request->get_param('venue'))));
+    update_post_meta($post_id, 'dtinfo', gigio_encode_text(trim((string) $request->get_param('dtinfo'))));
+    update_post_meta($post_id, 'bookinglink', trim((string) $request->get_param('bookinglink')));
+
+    // A replacement poster is optional.
+    $poster = gigio_attach_poster($post_id, $request->get_file_params());
+    if (is_wp_error($poster)) {
+        return $poster;
+    }
+
+    return gigio_event_response($post_id, 200);
+}
+
+/**
+ * DELETE /wp-json/gigiau/v1/events/<id>
+ * Delete one event and its poster attachment(s). Mirrors
+ * gigio_rest_organizer_delete() but for an admin caller: no ownership check.
+ */
+function gigio_rest_admin_delete_event($request)
+{
+    $post_id = gigio_require_gig_post($request);
+    if (is_wp_error($post_id)) {
+        return $post_id;
+    }
+
+    $thumb = get_post_thumbnail_id($post_id);
+    if ($thumb) {
+        wp_delete_attachment($thumb, true);
+    }
+    foreach (get_children(['post_parent' => $post_id, 'post_type' => 'attachment', 'numberposts' => -1, 'fields' => 'ids']) as $aid) {
+        wp_delete_attachment($aid, true);
+    }
+
+    if (!wp_delete_post($post_id, true)) {
+        return new WP_Error('gigio_delete_failed', 'Could not delete the event.', ['status' => 500]);
+    }
+
+    return rest_ensure_response(['deleted' => true, 'id' => $post_id]);
 }
 
 /**
