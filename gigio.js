@@ -237,6 +237,7 @@ function gigHtml(post, template) {
             html = html.replace(/<\/p>\s*<p[^>]*>/gi, "\n");
             html = html.replace(/<br\s*\/?>/gi, "\n");
             html = html.replace(/<\/p>/gi, "\n");
+            html = html.replace(/\[.*/, "");
             const tmp = document.createElement("div");
             tmp.innerHTML = html;
             contentText = tmp.textContent || tmp.innerText || "";
