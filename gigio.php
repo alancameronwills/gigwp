@@ -2,7 +2,7 @@
 
 /**
  * @package Gigiau Events Posters
- * @version 2.12.1
+ * @version 2.12.2
  * @wordpress-plugin
  * Description: Got event poster files? Put them on an events listings page with automatic ordering, expiry, and recurrence.
  * Plugin Name: Gigiau Events Posters
@@ -11,7 +11,7 @@
  * Author: Alan Cameron Wills
  * Developer: Alan Cameron Wills
  * Developer URI: https://gigiau.uk
- * Version: 2.12.1
+ * Version: 2.12.2
  */
 
 /*
@@ -226,7 +226,7 @@ function gigio_gig_list($p)
     $includePending = empty($p['json']) && !empty($p['includePending']);
     $postDated = gigio_get_gigs_with_recurs($p['fromDate'], $p['category'], $includePending);
     if ($p['json'] == 2) {
-        return "<pre id='gigiau'>\n" . json_encode($postDated, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
+        return "<pre id='gigiau'>\n" . json_encode($postDated, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n</pre>";
     }
     $postIds = array_map(function ($item) {
         return $item->ID;
@@ -242,7 +242,7 @@ function gigio_gig_list($p)
                 $value = str_replace('::', '|', $value);
             }
         });
-        return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n</pre>";
+        return "<pre id='gigiau'>\n" . json_encode($gigs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n</pre>";
     }
 
     if ($p['max'] > 0) {
